@@ -24,5 +24,7 @@ collections:
     feed_items_max: false
     share: [twitter, facebook]
 rss:
-  full_content: true    
+  full_content: true
 theme: scrapbook.css  
+twitter:
+  creator: "@d_olivaw"
