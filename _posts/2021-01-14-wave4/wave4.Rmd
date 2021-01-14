@@ -1,0 +1,280 @@
+---
+title: "Analysis of Global wave number-4 pattern in the southern subtropical sea surface temperature."
+description: |
+  A recent paper claims to have detected a global wave-4 pattern in subtropical SSTs. But have they really?
+author:
+  - name: Elio Campitelli
+    url: https://eliocamp.github.io/
+    affiliation: Centro de Investigaciones del Mar y la Atmósfera
+    affiliation_url: http://www.cima.fcen.uba.ar/
+date: "`r Sys.Date()`"
+categories:
+  - zonal waves 
+  - general circulation
+output: 
+  distill::distill_article:
+    code_folding: true
+bibliography: bibliography.bib
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, cache = TRUE, 
+                      layout = "l-page")
+knitr::knit_hooks$set(crop = knitr::hook_pdfcrop)
+
+library(magrittr)
+library(data.table)
+library(metR)
+library(ggplot2)
+
+
+# https://www.nature.com/articles/s41598-020-80492-x
+
+# fast detrend.
+Detrend <- function(y, x) {
+  nas <- is.na(y)
+  m <- mean(y, na.rm = TRUE)
+  if (!hasArg(x)) x <- seq_along(y)
+  y[!nas] <- .lm.fit(cbind(1, x[!nas]), y[!nas])$residuals
+  return(y + m)
+}
+
+theme_set(theme_minimal() + 
+            theme(panel.grid = element_blank()))
+# simple and dirty map
+map <- ggplot2::map_data("world2") %>%
+  as.data.table() %>%
+  .[lat %between% c(-90, -0)]
+
+quick_map <- list(geom_polygon(data = map,
+                               aes(long, lat, group = group), fill = "white", color = "black",
+                               size =0.2),
+                  scale_x_longitude(),
+                  scale_y_latitude(ticks = 10),
+                  coord_quickmap(ylim = c(-55, -20)))
+```
+
+
+This are some quick notes on [Global wave number-4 pattern in the southern subtropical sea surface temperature](https://www.nature.com/articles/s41598-020-80492-x) [@senapati2021]. The article claims to discover a wave-4 pattern in the southern Sea Surface Temperature (SST). Their basic method is to perform Empirical Orthogonal Function (EOF) to SST between 55°S and 20°S. They discard the first EOF as uninteresting because it's "ENSO-like" (unsurprising) and focus on the second EOF, whose spatial pattern is in Figure \@ref(fig:fig1).
+
+(ref:fig1-cap) Panel a from  @senapati2021's Figure 1: Spatial pattern of second leading EOF mode of SST anomaly over the region (20°S-55°S) from HadISST.
+
+```{r fig1, fig.cap = "(ref:fig1-cap)", out.extra="class=external"}
+knitr::include_graphics(here::here("img", "fig1.png"))
+```
+
+
+```{r download-data}
+# Download and decompress HadSST data
+had_file <- here::here("_data", "hadsst.nc")
+if (!file.exists(had_file)) {
+  hadsst <- "https://www.metoffice.gov.uk/hadobs/hadisst/data/HadISST_sst.nc.gz"
+  had_zip <- tempfile()
+  
+  download.file(hadsst, had_zip, mode = "wb")  
+  R.utils::gunzip(had_zip, had_file, remove = FALSE)
+}
+
+```
+
+```{r sst}
+# Read data and detrend
+sst <- ReadNetCDF(had_file, 
+                   vars = c("sst"),
+                   subset = list(latitude = c(-90, -0),
+                                 time = c("1979-01-01", "2018-12-31"))) %>% 
+  setnames(c("longitude", "latitude"), c("lon", "lat")) %>% 
+  na.omit() %>% 
+  .[, lon := ConvertLongitude(lon)] %>% 
+  .[, sst := Detrend(Anomaly(sst)), by = .(lon, lat, month(time))]
+```
+
+First things first. Download the data and try to reproduce their figure. 
+
+```{r eofs}
+eofs <- sst[lat %between% c(-55, -20)] %>%
+  copy() %>% 
+  .[, sst := sst*sqrt(cos(lat*pi/180))] %>% 
+  EOF(sst ~ time | lat + lon, n = 1:2, data = .)
+  
+```
+
+(ref:eof12-cap) Spatial patterns of the frist and second leading EOFs of detrended monthly anomalies of SST between 55°S and 20°S weighted by the square root of the cosine of latitude. 
+
+```{r eof12, fig.cap = "(ref:eof12-cap)", fig.height = 2.1, fig.width=5, preview = TRUE}
+ggplot(eofs$right, aes(lon, lat)) +
+  geom_contour_fill(aes(z = -sst)) +
+  scale_fill_divergent(guide = "none") +
+  quick_map + 
+  facet_wrap(PC~., ncol = 1)
+```
+
+And indeed. The first EOF is kind of ENSO-like (not really full ENSO, because I'm missing the equatorial SSTs, which is where ENSO really shines) and the second EOF looks pretty much identical to the their Figure 1.a save the different prime meridian. The time series associated with the second EOF is also almost exactly the same. 
+
+(ref:eoftime-cap) Temporal pattern of the second EOF in gray with a 5-month running mean in black. 
+
+```{r eoftime, fig.cap = "(ref:eoftime-cap)", layout = "l-body", fig.height=2.1}
+cut(eofs, 2) %>% 
+  .$left %>%
+  copy() %>% 
+  .[, sst5 := frollmean(sst, 5, align = "center")] %>% 
+  ggplot(aes(time, -sst)) +
+  geom_hline(yintercept = 0, size = 0.2, color = "gray50")  +
+  geom_line(aes(y = -sst5))  +
+  geom_line(color = "gray") +
+  
+  scale_y_continuous(NULL) +
+  scale_x_datetime(date_breaks = "5 years", date_labels = "%Y")
+```
+OK, I'm on the right track. 
+
+Now, my main concern with this paper is whether this pattern is actually, as the title of the paper says, a **global** pattern. EOF is a great technique for dimensionality reduction, but it's too easy to end up with statistical patterns that are a mix of actual physical patterns or even just noise. 
+
+The authors agree, and they say that..
+
+> In order to examine the synchronization of the W4 pattern among all the basins, point correlation analysis has been performed. For this purpose, eight points [i(37.5°S, 173.5°W), ii(37.5°S, 133.5°W), iii(44.5°S, 90.5°W), iv(39.5°S, 40.5°W), v(29.5°S, 2.5°W), vi(41.5°S, 41.5°E), vii(30.5°S, 86.5°E), viii(35.5°S, 130.5°E)] corresponding to the loading centres are selected (marked by green dots, i-viii, in Fig. 1a). The time series of SST anomaly is computed at each grid point after removing the contributions of the first EOF mode (henceforth, reconstructed SST anomaly). Further, point correlation is performed for the time series at the loading centers (Fig. 1a) with the reconstructed SST anomaly (Fig. 2a–h corresponding respectively to points (i) to (viii) of Fig. 1a). 
+
+The problem, IMHO, is that their [Figure 2](https://www.nature.com/articles/s41598-020-80492-x/figures/2) doesn't really show as much synchronisation as they claim. First, let's reproduce it here. 
+
+```{r points}
+# Define points of interest
+points <- tibble::tribble(~lat, ~lon,
+                          -37.5, -173.5,
+                          -37.5, -133.5,
+                          -44.5, -90.5,
+                          -39.5, -40.5, 
+                          -29.5, -2.5, 
+                          -41.5, 41.5,
+                          -30.5, 86.5,
+                          -35.5, 130.5) %>% 
+  as.data.table() %>% 
+  .[, lon := ConvertLongitude(lon)] %>% 
+  .[, id := tolower(as.roman(seq_len(.N)))] %>% 
+  .[, sign := rep(c(-1, 1), 4)]   # sign of original correlation
+```
+
+
+```{r sst_reconstruct}
+# Reconstruct SST from leading EOF  and add it to 
+# original data                     
+sst_reconstruct <- predict(eofs, n = 1) %>% 
+  setnames("sst", "sst_reconstructed")
+
+sst <- sst[sst_reconstruct, on = .NATURAL]
+rm(sst_reconstruct)
+```
+
+
+```{r corrs}
+# Compute correlation maps of  points of interest,
+# both with the orignial sst and sst with filtered EOF1
+# (for compatison)
+corrs <- sst[points, on = .NATURAL] %>% 
+  .[, ":="(lon = NULL, lat = NULL)] %>% 
+  setnames(c("sst", "sst_reconstructed"), c("ref", "ref_reconstructed")) %>% 
+  .[sst, on = "time", allow.cartesian = TRUE] %>% 
+  .[, .(correlation = cor(sst, ref),
+        correlation_reconstructed = cor(sst - sst_reconstructed, ref - ref_reconstructed)),
+    by = .(lon, lat, id, sign)]
+```
+
+
+(ref:correlations-cap) Correlation maps of SST and SST with the first EOF filterred out with the corresponding SST at each one of the points of interest. Compare with[Figure 2](https://www.nature.com/articles/s41598-020-80492-x/figures/2) of @senapati2021.
+
+```{r correlations, fig.cap = "(ref:correlations-cap)"}
+corrs %>% 
+  melt(measure.vars = c("correlation", "correlation_reconstructed")) %>% 
+  ggplot(aes(lon, lat)) +
+  geom_contour_fill(aes(z = -value*sign), 
+                    breaks = AnchorBreaks(anchor = 0, binwidth = 0.1)) +
+  quick_map +
+  geom_point(data = copy(points)[, id := NULL], shape = 21, fill = NA) +
+  geom_point(data = copy(points), shape = 21, color = "black", fill =  "#0e9a83") +
+  scale_fill_divergent() +
+  facet_grid(id~variable, labeller = labeller(variable = c(correlation = "SST", 
+                                                           correlation_reconstructed = "SST - EOF1")))
+```
+I purposedly computed the two versions. The panels on the right should be a reproduction of @senapati2021's Figure 2. It's hard to compare them because of the different colour palettes and scale limits (the authors really chose the parameters that enhanced small correlations), but I personally don't see much coherency. The first three rows do show high correlations between the three points in the Pacific, which in the unfiltered data looks very much like the well-known PSA pattern that appears as a response to El Niño Southern Oscillation. 
+
+Another way to look at it is with by plotting $r^2$ which directly quantifies the degree of (linear) dependence between points. 
+
+(ref:r2-cap) Coefficient of determination ($r^2$) computed from the correlations with the filtered SST in Figure \@ref(fig:correlations). Contours only show areas with $r^2 > 0.1$. 
+
+```{r r2, fig.cap = "(ref:r2-cap)"}
+corrs %>% 
+  ggplot(aes(lon, lat)) +
+  geom_contour_fill(aes(z = correlation_reconstructed^2, 
+                        fill = ..level..), breaks = seq(.1, 1, by = 0.1)) +
+  quick_map +
+   geom_point(data = copy(points)[, id := NULL], shape = 21, fill = NA) +
+  geom_point(data = copy(points), shape = 21, color = "black", fill =  "#de3e80") +
+  scale_fill_viridis_c(oob = scales::squish,
+                       super = ScaleDiscretised) +
+  facet_grid(id~.)
+```
+
+Again, aside from the points in the Pacific, there is not a lot of long-range relationships between points. As I see it, I strongly suspect that this PC2 pattern is not really robustly **global**.
+
+Let's try something else. From the correlation maps above (and previous knowledge), it's pretty obvious that the Pacific sector does behave somewhat coherently. So what I'm going to do is to split the spatial pattern into the Pacific basin (between 150°E and 290°E) and the Atlantic-Indian basins (the rest of the hemisphere). Then, I'm going to project each pattern onto the corresponding SST fields to get two indices. If the patterns is really coherent in time, then both indices must be strongly correlated. 
+
+
+```{r series}
+series <- eofs$right %>% copy() %>% 
+  .[PC == "PC2"] %>% 
+  .[, basin := ifelse(lon %between% c(150, 290), "pacific", "atlantic")] %>% 
+  setnames("sst", "EOF") %>% 
+  .[sst, on = c("lon", "lat")] %>% 
+  .[, cor(sst, EOF), by = .(time, basin)]
+```
+
+
+```{r indices, fig.cap = "Relationship between the Pacific index and Atlantic-Indian index.", layout= "l-body"}
+# Relationship between the two indices. 
+series %>% 
+  dcast(time ~ basin) %>% 
+  ggplot(aes(pacific, atlantic)) +
+  geom_point() +
+  geom_label(data = ~.x[, .(cor(pacific, atlantic))], 
+            aes(label = paste0("cor= ", signif(V1, 2))), 
+            x = -0.6, y = .5, size = 7) +
+  geom_smooth(method = "lm") +
+  scale_x_continuous("Pacific index") +
+  scale_y_continuous("Atlantic-Indian index")
+```
+
+I mean... A correlation of 0.37 is not nothing, but it's also not a lot. 
+
+
+Now one last test. Let's do the correlation map of each index. Again, if the pattern is really global, then the correlation map of the Pacific Index should also show the Atlantic-Indian pattern and vice versa.
+
+
+```{r patterns}
+patterns <- eofs$left[PC == "PC2"] %>% 
+  setnames(c("sst", "PC"), c("V1", "basin")) %>% 
+  rbind(., series, use.names = TRUE) %>% 
+  .[sst, on = "time", allow.cartesian = TRUE] %>% 
+  .[, .(correlation = cor(V1, sst)), by = .(lon, lat, basin)] 
+
+lines <- CJ(lon = c(150, 290),
+            basin = c("pacific", "atlantic"))
+```
+
+
+```{r patterns2, fig.cap = "Correlation patterns with the Pacific index, the Atlantic-Indian index and the PC2."}
+patterns %>% 
+  ggplot(aes(lon, lat)) +
+  geom_contour_fill(aes(z = -correlation, fill = ..level..), 
+                    breaks = AnchorBreaks()) +
+  quick_map + 
+  geom_vline(data = lines, aes(xintercept = lon)) +
+  scale_fill_divergent_discretised(limits = c(-1, 1)) +
+  facet_wrap(basin~., ncol = 1, labeller = labeller(basi = c(pacific = "Pacific", 
+                                                             atlantic = "Atlantic-Indian")))
+```
+
+Again... kinda? For the Atlantic-Indian index, the Pacific signal is barely there and it's actually completely missing in the Western Pacific. And for the Pacific index, the there is *some* signal in the Indian ocean, but barely any signal in the Atlantic.
+
+
+`r emo::ji("shrug")`. Take it as you will. From what I've seen here, I remain unconvinced that this is a global pattern of SST. 
+

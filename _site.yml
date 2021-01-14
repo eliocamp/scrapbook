@@ -1,0 +1,28 @@
+name: "The Scrapbook"
+title: "The Scrapbook"
+description: |
+  When reading papers I tend to replicate or re-run the analysis with small 
+  alterations. This is a place to organise those notes. 
+output_dir: "docs"
+navbar:
+  source_url: true
+  right:
+    - text: "Home"
+      href: index.html
+    - text: "About"
+      href: about.html
+    - icon: fa fa-rss
+      href: index.xml
+output: 
+  distill::distill_article:
+    code_folding: true
+    self_contained: false
+base_url: http://eliocamp.github.io/scrapbook
+repository_url: http://github.com/eliocamp/scrapbook
+collections:
+  posts:
+    feed_items_max: false
+    share: [twitter, linkedin]
+rss:
+  full_content: true    
+theme: scrapbook.css  
