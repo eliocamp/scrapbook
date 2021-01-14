@@ -22,7 +22,7 @@ repository_url: http://github.com/eliocamp/scrapbook
 collections:
   posts:
     feed_items_max: false
-    share: [twitter, linkedin]
+    share: [twitter, facebook]
 rss:
   full_content: true    
 theme: scrapbook.css  

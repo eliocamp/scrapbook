@@ -1,5 +1,5 @@
 ---
-title: "Analysis of Global wave number-4 pattern in the southern subtropical sea surface temperature."
+title: Analysis of "Global wave number-4 pattern in the southern subtropical sea surface temperature."
 description: |
   A recent paper claims to have detected a global wave-4 pattern in subtropical SSTs. But have they really?
 author:
@@ -8,6 +8,7 @@ author:
     affiliation: Centro de Investigaciones del Mar y la Atmósfera
     affiliation_url: http://www.cima.fcen.uba.ar/
 date: "`r Sys.Date()`"
+slug: wave4
 categories:
   - zonal waves 
   - general circulation
@@ -15,6 +16,7 @@ output:
   distill::distill_article:
     code_folding: true
 bibliography: bibliography.bib
+compare_updates_url: https://github.com/eliocamp/scrapbook/blob/main/_posts/2021-01-14-wave4/wave4.Rmd
 ---
 
 
@@ -61,7 +63,7 @@ This are some quick notes on [Global wave number-4 pattern in the southern subtr
 (ref:fig1-cap) Panel a from  @senapati2021's Figure 1: Spatial pattern of second leading EOF mode of SST anomaly over the region (20°S-55°S) from HadISST.
 
 ```{r fig1, fig.cap = "(ref:fig1-cap)", out.extra="class=external"}
-knitr::include_graphics(here::here("img", "fig1.png"))
+knitr::include_graphics(here::here("img", "wave4-fig1.png"))
 ```
 
 
