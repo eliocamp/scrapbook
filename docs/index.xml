@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss xmlns:atom="http://www.w3.org/2005/Atom" xmlns:media="http://search.yahoo.com/mrss/" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:distill="https://distill.pub/journal/" version="2.0">
+  <channel>
+    <title>The Scrapbook</title>
+    <link>http://eliocamp.github.io/scrapbook</link>
+    <atom:link href="http://eliocamp.github.io/scrapbook/index.xml" rel="self" type="application/rss+xml"/>
+    <description>When reading papers I tend to replicate or re-run the analysis with small 
+alterations. This is a place to organise those notes. 
+</description>
+    <generator>Distill</generator>
+    <lastBuildDate>Thu, 14 Jan 2021 00:00:00 +0000</lastBuildDate>
+    <item>
+      <title>Analysis of Global wave number-4 pattern in the southern subtropical sea surface temperature.</title>
+      <dc:creator>Elio Campitelli</dc:creator>
+      <link>http://eliocamp.github.io/scrapbook/posts/2021-01-14-wave4</link>
+      <description>A recent paper claims to have detected a global wave-4 pattern in subtropical SSTs. But have they really?</description>
+      <category>zonal waves</category>
+      <category>general circulation</category>
+      <guid>http://eliocamp.github.io/scrapbook/posts/2021-01-14-wave4</guid>
+      <pubDate>Thu, 14 Jan 2021 00:00:00 +0000</pubDate>
+      <media:content url="http://eliocamp.github.io/scrapbook/posts/2021-01-14-wave4/distill-preview.png" medium="image" type="image/png" width="960" height="403"/>
+    </item>
+  </channel>
+</rss>
