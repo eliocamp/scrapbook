@@ -13,8 +13,7 @@ categories:
   - zonal waves 
   - general circulation
 output: 
-  distill::distill_article:
-    code_folding: true
+  distill::distill_article: default
 bibliography: bibliography.bib
 compare_updates_url: https://github.com/eliocamp/scrapbook/blob/main/_posts/2021-01-14-wave4/wave4.Rmd
 ---
@@ -22,16 +21,30 @@ compare_updates_url: https://github.com/eliocamp/scrapbook/blob/main/_posts/2021
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE, cache = TRUE, 
+                      code_folding = TRUE,
                       layout = "l-page")
 knitr::knit_hooks$set(crop = knitr::hook_pdfcrop)
+# https://www.nature.com/articles/s41598-020-80492-x
+```
 
+
+This are some quick notes on [Global wave number-4 pattern in the southern subtropical sea surface temperature](https://www.nature.com/articles/s41598-020-80492-x) [@senapati2021]. The article claims to discover a wave-4 pattern in the southern Sea Surface Temperature (SST). Their basic method is to perform Empirical Orthogonal Function (EOF) to SST between 55°S and 20°S. They discard the first EOF as uninteresting because it's "ENSO-like" (unsurprising) and focus on the second EOF, whose spatial pattern is in Figure \@ref(fig:fig1).
+
+(ref:fig1-cap) Panel a from  @senapati2021's Figure 1: Spatial pattern of second leading EOF mode of SST anomaly over the region (20°S-55°S) from HadISST.
+
+```{r fig1, echo=FALSE, fig.cap="(ref:fig1-cap)",  out.extra="class=external"}
+knitr::include_graphics(here::here("img", "wave4-fig1.png"))
+```
+
+First things first. Download the data and try to reproduce their figure. 
+
+```{r helpers}
+# packages
 library(magrittr)
 library(data.table)
 library(metR)
 library(ggplot2)
 
-
-# https://www.nature.com/articles/s41598-020-80492-x
 
 # fast detrend.
 Detrend <- function(y, x) {
@@ -46,8 +59,7 @@ theme_set(theme_minimal() +
             theme(panel.grid = element_blank()))
 # simple and dirty map
 map <- ggplot2::map_data("world2") %>%
-  as.data.table() %>%
-  .[lat %between% c(-90, -0)]
+  subset(lat %between% c(-90, -0))
 
 quick_map <- list(geom_polygon(data = map,
                                aes(long, lat, group = group), fill = "white", color = "black",
@@ -56,16 +68,6 @@ quick_map <- list(geom_polygon(data = map,
                   scale_y_latitude(ticks = 10),
                   coord_quickmap(ylim = c(-55, -20)))
 ```
-
-
-This are some quick notes on [Global wave number-4 pattern in the southern subtropical sea surface temperature](https://www.nature.com/articles/s41598-020-80492-x) [@senapati2021]. The article claims to discover a wave-4 pattern in the southern Sea Surface Temperature (SST). Their basic method is to perform Empirical Orthogonal Function (EOF) to SST between 55°S and 20°S. They discard the first EOF as uninteresting because it's "ENSO-like" (unsurprising) and focus on the second EOF, whose spatial pattern is in Figure \@ref(fig:fig1).
-
-(ref:fig1-cap) Panel a from  @senapati2021's Figure 1: Spatial pattern of second leading EOF mode of SST anomaly over the region (20°S-55°S) from HadISST.
-
-```{r fig1, fig.cap = "(ref:fig1-cap)", out.extra="class=external"}
-knitr::include_graphics(here::here("img", "wave4-fig1.png"))
-```
-
 
 ```{r download-data}
 # Download and decompress HadSST data
@@ -91,8 +93,6 @@ sst <- ReadNetCDF(had_file,
   .[, lon := ConvertLongitude(lon)] %>% 
   .[, sst := Detrend(Anomaly(sst)), by = .(lon, lat, month(time))]
 ```
-
-First things first. Download the data and try to reproduce their figure. 
 
 ```{r eofs}
 eofs <- sst[lat %between% c(-55, -20)] %>%
