@@ -1,0 +1,34 @@
+
+@article{cash2002,
+  title = {The {{Structure}} and {{Composition}} of the {{Annular Modes}} in an {{Aquaplanet General Circulation Model}}},
+  author = {Cash, Benjamin A. and Kushner, Paul J. and Vallis, Geoffrey K.},
+  year = {2002},
+  month = dec,
+  volume = {59},
+  pages = {3399--3414},
+  publisher = {{American Meteorological Society}},
+  issn = {0022-4928},
+  doi = {10.1175/1520-0469(2002)059<3399:TSACOT>2.0.CO;2},
+  abstract = {The annular mode simulated by an atmospheric general circulation model with a zonally symmetric lower boundary is investigated. The annular mode, defined as the leading empirical orthogonal function (EOF) of the zonal-mean surface pressure, has a meridional structure consisting of a north\textendash south dipole, similar to observations. The leading EOF of the zonally varying surface pressure has the same meridional structure and is also zonally symmetric. Because the lower boundary is zonally symmetric, composites of days with high projection onto the mode have, to within sampling error, no zonal structure. However, individual periods during which the zonal-mean surface pressure projects strongly onto the annular mode are dominated by zonally localized structures. Thus, the model annular mode represents a zonally homogeneous distribution of zonally localized events with a similar meridional structure, rather than a zonally symmetric mode of variability per se. Individual annular-mode events typically show a north\textendash south teleconnection pattern whose meridional structure closely resembles the annular mode and whose zonal structure extends 60\textdegree{} to 90\textdegree{} in longitude, with a slight northwest\textendash southeast offset between its centers of action. Similar structures are found for EOFs calculated over a subset of the domain corresponding to the width of the Atlantic basin. The spatial structure of both the teleconnection pattern and the regional EOFs resemble the observed North Atlantic Oscillation (NAO) pattern.},
+  file = {/home/elio/Dropbox/Papers/Cash et al_The Structure and Composition of the Annular Modes in an Aquaplanet General_The Structure and Composition of the Annular Modes in an Aquaplanet General.pdf},
+  journal = {J. Atmos. Sci.},
+  number = {23}
+}
+
+@article{cash2005,
+  title = {Zonal {{Asymmetries}}, {{Teleconnections}}, and {{Annular Patterns}} in a {{GCM}}},
+  author = {Cash, Benjamin A. and Kushner, Paul J. and Vallis, Geoffrey K.},
+  year = {2005},
+  month = jan,
+  volume = {62},
+  pages = {207--219},
+  publisher = {{American Meteorological Society}},
+  issn = {0022-4928},
+  doi = {10.1175/JAS-3361.1},
+  abstract = {The influence of zonally asymmetric boundary conditions on the leading modes of variability in a suite of atmospheric general circulation models is investigated. The set of experiments consists of nine model configurations, with varying degrees and types of zonal asymmetry in their boundary conditions. The structure of the leading EOF varies with the zonal asymmetry of the base state for each model configuration. In particular, a close relationship is found between the structure of the EOF and the model storm tracks. An approximately linear relationship is found to hold between the magnitude of the zonal asymmetry of the leading EOF and of the storm tracks in the models. It is shown that this linear relationship extends to the observations. One-point correlation maps centered on the regions where the EOFs reach their maximum amplitude show similar structures for all configurations. These structures consist of a north\textendash south dipole, resembling the observed structure of the North Atlantic Oscillation (NAO). They are significantly more zonally localized than the leading EOF, but do resemble one-point correlation maps and sector EOFs calculated for a simulation with zonally symmetric boundary conditions. Thus, the leading EOF for each simulation appears to represent the longitudinal distribution of zonally localized NAO-like patterns. This longitudinal distribution appears to be tied to the distribution of high-frequency eddies, as represented by the storm tracks. A detailed momentum budget for each case confirms that high-frequency eddies play a crucial role in producing the NAO-like patterns. Other dynamical processes also play an important role, but vary with the details of the simulation.},
+  file = {/home/elio/Dropbox/Papers/Cash et al_Zonal Asymmetries, Teleconnections, and Annular Patterns in a GCM_Zonal Asymmetries, Teleconnections, and Annular Patterns in a GCM.pdf},
+  journal = {J. Atmos. Sci.},
+  number = {1}
+}
+
+

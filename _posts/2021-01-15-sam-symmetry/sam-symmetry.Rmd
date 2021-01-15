@@ -1,0 +1,380 @@
+---
+title: Does the Southern Annular Mode exist?
+description: |
+  Scavenging the literature on the Southern Annular Mode I came across two papers from the early 2000's which seem to question whether this mode is actually a global phenomenon and not a statistical artifact.
+author:
+  - name: Elio Campitelli
+    url: https://eliocamp.github.io/
+    affiliation: Centro de Investigaciones del Mar y la Atmósfera
+    affiliation_url: http://www.cima.fcen.uba.ar/
+date: "2020-01-15"
+slug: sam-real
+categories:
+  - SAM
+  - statistics
+  - general circulation
+output: 
+  distill::distill_article: default
+bibliography: bibliography.bib
+compare_updates_url: https://github.com/eliocamp/scrapbook/blob/main/_posts/2021-01-15-sam-symmetry/sam-symmetry.Rmd
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, 
+                      code_folding = TRUE)
+```
+
+# Introduction
+
+In "The Structure and Composition of the Annular Modes in an Aquaplanet General Circulation Model" [@cash2002] and "Zonal Asymmetries, Teleconnections, and Annular Patterns in a GCM" [@cash2005] (CKV from now on), the authors analyse simulations on an aquaplanet model (in the former) and with some zonal asymmetries (in the latter). In particular, they study the configuration of their "annular modes" or, rather, their leading EOF. Their conclusion is that annular modes as seen from the leading EOF are a statistical artifact and that, in fact, they actually describe localised events. 
+
+If this is correct and is also valid for the real atmosphere (as opposed to their simple models), then it throws a monkey wrench to any attempts to understand the Souther Annular Mode --it doesn't even exist as a physically meaningful entity. 
+
+Here, I usea reanalysis data to show that, while CKV raises important points, the concept of the global SAM is safe. 
+
+# CKV analysis
+
+CKV ran an aquaplanet model and they point out that the first EOF of sea level pressure descirbes an almost perfect annular mode. 
+
+
+(ref:ckv-slp-cap) Figure 4 from @cash2002: Leading EOF of winter season surface pressure. (a) Normalized, nondimensional EOF of the zonal-mean surface pressure. (b) Regression map of zonal-mean surface pressure against the principal component of the leading EOF. Amplitude is the response to 1 std dev in the principal component. (Units: mb.) (c) As in (b), except for the zonally varying pressure. Solid lines are positive, dashed lines are negative, and a heavy contour denotes the zero line. Contour interval is 2 mb
+
+
+```{r ckv-slp, fig.cap = "(ref:ckv-slp-cap)", out.extra="class=external", echo = FALSE}
+knitr::include_graphics(here::here("img", "ckv-sam-aqua.png"))
+```
+
+The problem is that when the look at particular events of high / low values of EOF1, they are nowhere near "annular".
+
+
+(ref:ckv-events-cap) Excerpt from Figure 7 from @cash2002: High- and low-index annular-mode events. (a), (b), (c) High-index events. (d), (e), (f ) Low-index events. Events displayed are 3-day averages about the day that the projection coefficient attains its maximum value during the event. Solid contours are positive, dashed contours are negative, and a heavy contour denotes the zero line. Contour interval is 5 mb
+
+```{r ckv-events, fig.cap = "(ref:ckv-events-cap)", out.extra="class=external", echo = FALSE}
+knitr::include_graphics(here::here("img", "ckv-sam-cases.png"))
+```
+
+Inspired by this disconnect between the structure of the EOF and the individual cases, they try a different approach. They go back to using teleconnection maps (correlation between SLP at one point and the rest of the globe) based on various latitudes. They conclude that negative correlations are maximised for points at 65º and 35º (\@ref(fig:ckv-events))
+
+(ref:ckv-correlation-cap) Exerpt or FIgure 9 from @cash2002: One-point correlation maps for surface pressure. (a) Base point at 358, (b) base point at 658, (c) base point at 508, and (d) base point at Pole. Solid contours are positive, dashed contours are negative, and a heavy contour denotes the zero line. Contour interval is 0.1. Correlation maps are averages taken over all longitudes, for a given latitude, where base points have been rotated to coincide.
+
+```{r ckv-correlation, fig.cap = "SLP de casos seleccionados con eventos positivos (izquierda) y negativos (derecha)", out.extra="class=external", echo = FALSE}
+knitr::include_graphics(here::here("img", "ckv-sam-teleconnection.png"))
+```
+
+These maps look like "zonally localised versions" of the global annular mode. From this (and other results), CKV conclude that
+
+> The low-frequency variability of the model is thus characterized by meridional dipoles in the sea level pressure, with centers near 35º and 65º latitude, and a zonal scale of 60º to 90º. Because these events are distributed uniformly in longitude in the aquaplanet model, they are represented in an EOF analysis as a single, zonally uniform pattern.
+
+Strong stuff. 
+
+# Further analysis
+
+CKV's proposal is intriguing, does the real atmosphere behaves thusly? The problem they put forward is very similar to the problem I had with @senapati2021 [here](/posts/2021-01-14-wave4/) so I'll use similar methods. 
+
+
+```{r helpers}
+library(data.table)
+library(magrittr)
+library(metR)
+library(ggplot2)
+library(ggperiodic)
+library(patchwork)
+
+theme_set(theme_minimal() + 
+            theme(panel.grid = element_blank()))
+
+# simple and dirty map
+map <- ggplot2::map_data("world2") %>%
+  subset(lat %between% c(-90, -10))
+
+quick_map <- list(geom_polygon(data = map,
+                               aes(long, lat, group = group), fill = NA, color = "black",
+                               size =0.2),
+                  scale_x_longitude(),
+                  scale_y_latitude())
+```
+
+
+```{r download-data}
+# This WILL take long. Go make yourself a cut of tea or brew some mate.
+era5_file <- here::here("_data", "era5-hgt.nc")
+
+if (!file.exists(era5_file)) {
+  request <- list(
+    format = "netcdf",
+    product_type = "monthly_averaged_reanalysis",
+    variable = "geopotential",
+    pressure_level = "700",
+    year = c("1979", "1980", "1981", "1982", "1983", "1984", "1985", "1986", "1987", "1988", "1989", "1990", "1991", "1992", "1993", "1994", "1995", "1996", "1997", "1998", "1999", "2000", "2001", "2002", "2003", "2004", "2005", "2006", "2007", "2008", "2009", "2010", "2011", "2012", "2013", "2014", "2015", "2016", "2017", "2018", "2019"),
+    month = c("01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12"),
+    time = "00:00",
+    area = c(-20, -180, -90, 180),
+    grid = c("2.5", "2.5"),   # we don't need high resolution
+    dataset_short_name = "reanalysis-era5-pressure-levels-monthly-means",
+    target = basename(era5_file)
+  )
+  
+  # Need to set up user with
+  # ecmwfr::wf_set_key() 
+  ecmwfr::wf_request(request, path = dirname(era5_file))
+}
+```
+
+```{r hgt}
+hgt <- ReadNetCDF(era5_file, vars = c(hgt = "z")) %>% 
+  setnames(c("latitude", "longitude"),
+           c("lat", "lon")) %>% 
+  .[, lon := ConvertLongitude(lon)] %>%   # put longitude between 0 and 360
+  .[, hgt := hgt/9.8] %>% 
+  .[, hgt_a := hgt - mean(hgt), by = .(lon, lat, month(time))] %>% 
+  .[, hgt_m := mean(hgt_a), by = .(lat, time)] %>% 
+  .[, hgt_z := hgt_a - hgt_m]
+```
+
+Let's first compute the Southern Annular Mode (SAM) as the leading EOF of the 700 hPa geopotential height south of 20ºS. 
+
+
+```{r sam}
+sam <- hgt %>% 
+  copy() %>% 
+  .[, hgt := hgt_a*sqrt(cos(lat*pi/180))] %>% 
+  EOF(hgt ~ time | lon+ lat, n = 1, data = .)
+```
+
+
+
+```{r sam-pattern, fig.cap = "Spatial pattern of the leading EOF of 700 hPa monthly geopotential height anomalies (AKA Southern Annular Mode, AKA SAM).", preview = TRUE}
+sam$right %>% 
+  periodic(lon = c(0, 360)) %>% 
+  ggplot(aes(lon, lat)) +
+  geom_contour_fill(aes(z = hgt, fill = ..level..)) +
+  quick_map +
+  coord_polar() +
+  scale_fill_divergent_discretised(guide = "none")
+```
+
+And now let's compute localised SAM indices. At each longitude I will take a section of the data located between 45º West and 45ª East of it and project the geopotential height field onto the corresponding SAM pattern (in Figure \@ref(fig:sam-pattern)). The result is one "local SAM index" for each longitude. 
+
+
+```{r lon_eofs, cache = TRUE}
+lon_width <- 90
+lon_halfwidth <- lon_width/2
+
+# "extended" version of geopotential height 
+hgt2 <- sam$right %>% 
+  copy() %>% 
+  setnames("hgt", "EOF") %>% 
+  hgt[., on = .NATURAL] %>% 
+  qwrap(lon = c(0, 360) ~ c(-lon_halfwidth, 360 + lon_halfwidth))
+
+# For each longitude, compute EOF using a segment of lon_width width
+# centered in that longitude.
+lon_eofs <- lapply(unique(hgt$lon), function(base_lon) {
+  hgt2 %>% 
+    .[lon %between% (base_lon + c(-lon_halfwidth, lon_halfwidth))] %>% 
+    .[, .(eof = weighted.mean(hgt_a*EOF, cos(lat*pi/180))),
+      by = time] %>% 
+    .[, base_lon := base_lon] %>% 
+    .[]
+}) %>% 
+  rbindlist()
+```
+
+Following a similar argument from my analysis of the proposed [wave-4 pattern](/posts/2021-01-14-wave4/), if the SAM pattern in Figure \@ref(fig:sam-pattern) was a statistical artifact formed by the combination of independent localised events, then the local SAM indices shouldn't be correlated between each other at all. So let's compute the pairwise correlation at each longitude.
+
+```{r paiwise-cor, fig.cap = "Pairwise correlation between localised SAM indices."}
+lon_eofs %>% 
+  widyr::pairwise_cor(base_lon, time, eof) %>% 
+  ggplot(aes(item1, item2)) +
+  geom_contour_fill(aes(z = correlation, fill = ..level..), na.fill = 1) +
+  geom_contour2(aes(z = correlation), size = 0.2) +
+  geom_text_contour(aes(z = correlation, stroke.color = ..level..), color = "black",
+                    stroke = 0.2) +
+  scale_fill_divergent("Correlation",
+                       super = ScaleDiscretised) +
+  scale_color_divergent(aesthetics = "stroke.color", guide = "none") +
+  scale_x_longitude() +
+  scale_y_longitude() +
+  coord_equal() 
+```
+
+And form Figure \@ref(fig:paiwise-cor) I feel that it's clear that the local SAM indices are fairly well correlated. There is, though, a correlation minimum between ~120W and 60E. 120W coincides with the Amundsen Sea Low and where most of the wave activity related to El Niño Southern Oscillation is located, so is not surprising that this region appears notable.
+
+Another test would be to compute the correlation map of each localised SAM index with the whole geopotential height field. Again, if the SAM was not global, then I would not expect to find a (relatively) complete SAM pattern associated with the localised indices. 
+
+```{r cor_pattern}
+cor_pattern <- lon_eofs %>% 
+  .[base_lon %in% rev(seq(0, 360, length.out = 7))[-1]] %>% 
+  .[hgt, on = "time", allow.cartesian = TRUE] %>% 
+  .[, cor(hgt_a, eof), by = .(lon, lat, base_lon)]
+```
+
+
+
+```{r cor-pattern, fig.cap = "Correlation maps between 700 hPa monthly geopotential height anomalies and localised SAM indices at differnet centre longidutes. Black contours indicate the original SAM pattern and black lines delineate the longitudes used to compute each localised SAM index. "}
+base_lons <- unique(cor_pattern$base_lon)
+wrap_ <- function(lon) {
+   lon <- ifelse(lon <= 0, lon + 360, lon)
+   lon <- ifelse(lon >= 360, lon - 360, lon)
+   lon
+}
+
+lims <- data.table(base_lon = unique(lon_eofs$base_lon)) %>% 
+   .[, side1 := wrap_(base_lon + 45)] %>% 
+   .[, side2 := wrap_(base_lon - 45)] %>% 
+   .[base_lon %~% base_lons] 
+
+
+cor_pattern %>% 
+  periodic(lon = c(0, 360)) %>% 
+  ggplot(aes(lon, lat)) +
+  geom_contour_fill(aes(z = V1, fill = ..level..), breaks = AnchorBreaks(exclude = 0)) +
+  geom_contour2(data = periodic(sam$right, lon = c(0, 360)),
+                aes(z = hgt), size = 0.2, breaks = AnchorBreaks(0, 0.01)) +
+  geom_vline(data = lims, aes(xintercept = side1)) +
+  geom_vline(data = lims, aes(xintercept = side2)) +
+  quick_map +
+  scale_fill_divergent(super = ScaleDiscretised) +
+  coord_polar() +
+  facet_wrap(.~base_lon, labeller = labeller(base_lon = LonLabel)) +
+  theme(axis.text = element_blank())
+```
+
+Figure \@ref(fig:cor-pattern) shows the correlation patterns for the local SAM indices with central longitudes of `r knitr::combine_words(LonLabel(ConvertLongitude(sort(unique(cor_pattern$base_lon)))))`. The original SAM pattern is overlaid with contours for comparison. Although with some differences, I'd argue that in all cases the classic SAM pattern is clearly visible. 
+
+
+# Null hypothesis 
+
+I now wonder... how would the null hypothesis of no global SAM looked under these same methods? I don't have CKV data handy, but I can run simulations. 
+
+First, replace the zonally varying SAM with it's zonal mean component. Then, use that pattern to simulate a global, zonally symmetric, geopotential field. Finally, multiply that field with a localised Gaussian function with a random central longitude and 45º standard deviation. An example field is shown in Figure \@ref(fig:example).
+
+```{r simulation}
+mean_eof <- copy(sam)
+
+mean_eof$right[, hgt := mean(hgt), by = lat]
+
+zonal_amplitude <- function(lon, central_lon) {
+  amplitude <- suppressWarnings(circular::dwrappednormal(lon*pi/180, mu = central_lon[1]*pi/180, sd = 45*pi/180))
+  amplitude[amplitude <= 0.05] <- 0
+  amplitude/max(amplitude)
+}
+
+# Grid
+simulation <- CJ(lon = unique(hgt$lon), 
+                 lat = unique(hgt$lat),
+                 time = unique(hgt$time)) %>% 
+  predict(mean_eof)[., on = .NATURAL] %>% 
+  setnames("hgt", "annular") %>% 
+  na.omit() %>% 
+  .[, central_lon := runif(1, 0, 360), by = time] %>% 
+  .[, zonal_amplitude := zonal_amplitude(lon, central_lon), by = .(time)] %>% 
+  .[, hgt := zonal_amplitude*annular/sqrt(cos(lat*pi/180))]
+```
+
+
+```{r example, fig.cap = "Example of a single simulated geopotential height field. The zonally symmetric SAM pattern (left) is multiplied by the localisation function (middle), which reulsts in a localised pattern of positive and negative anomalies."}
+simulation[time == unique(time)[1]] %>% 
+  periodic(lon = c(0, 360)) %>% 
+  ggplot(aes(lon, lat)) +
+  geom_contour_fill(aes(z = annular)) +
+  quick_map +
+  scale_fill_divergent(guide = "none") +
+  coord_polar() +
+  labs(subtitle = "Zonally symmetric anomaly") +
+  
+  simulation[time == unique(time)[1]] %>% 
+  periodic(lon = c(0, 360)) %>% 
+  ggplot(aes(lon, lat)) +
+  geom_contour_fill(aes(z = zonal_amplitude)) +
+  quick_map +
+  scale_fill_divergent(guide = "none") +
+  coord_polar() +
+  labs(subtitle = "Localisation function") + 
+  
+  
+  simulation[time == unique(time)[1]] %>% 
+  periodic(lon = c(0, 360)) %>% 
+  ggplot(aes(lon, lat)) +
+  geom_contour_fill(aes(z = hgt)) +
+  quick_map +
+  scale_fill_divergent(guide = "none") +
+  coord_polar() +
+  labs(subtitle = "Final geopotential field") + 
+
+
+  plot_layout(ncol = 3) & theme(axis.text = element_blank())
+```
+
+CKV's contention is that the leading EOF of an atmosphere consisting solely on localised patterns such as the last row of Figure \@ref(fig:example) will appear as a single annular pattern. Let's see first if that's correct.
+
+
+```{r sim_eof}
+sim_eof <- simulation %>% 
+  .[lat >= -85] %>% 
+  .[, hgt := Anomaly(hgt)*sqrt(cos(lat*pi/180)), by = .(lon, lat, month(time))] %>% 
+  .[, EOF(hgt ~ time | lon + lat, n = 1)]
+```
+
+
+```{r sam-sim, fig.cap = "Leading EOF of simulated geopotential height fields."}
+sim_eof$right %>%
+  periodic(lon = c(0, 360)) %>% 
+  ggplot(aes(lon, lat)) +
+  geom_contour_fill(aes(z = hgt)) +
+  quick_map +
+  scale_fill_divergent(guide = "none") +
+  coord_polar()
+```
+
+Figure \@ref(fig:sam-sim) shows the leading EOF of the simulated data. And indeed, even thought by construction the data doesn't have an annular mode, one appears as the leading EOF plain as day. Now let's put them through the same process as the real data. Get the localised SAM indices and compute the pairwise correlation between them.
+
+
+```{r lon_eofs_sim, cache = TRUE}
+# "extended" version of geopotential height 
+hgt2 <- sim_eof$right %>% 
+  copy() %>% 
+  setnames("hgt", "EOF") %>% 
+  simulation[., on = .NATURAL] %>% 
+  qwrap(lon = c(0, 360) ~ c(-lon_halfwidth, 360 + lon_halfwidth))
+
+# For each longitude, compute EOF using a segment of lon_width width
+# centered in that longitude.
+lon_eofs_sim <- lapply(unique(hgt$lon), function(base_lon) {
+  hgt2 %>% 
+    .[lon %between% (base_lon + c(-lon_halfwidth, lon_halfwidth))] %>% 
+    .[, .(eof = weighted.mean(hgt*EOF, cos(lat*pi/180))),
+      by = time] %>% 
+    .[, base_lon := base_lon] %>% 
+    .[]
+}) %>% 
+  rbindlist()
+```
+
+(ref:pairwise-cor-sim-cap) Same as Figure \@ref(fig:paiwise-cor) but for the simulated fields. 
+
+```{r paiwise-cor-sim, fig.cap = "(ref:pairwise-cor-sim-cap)"}
+lon_eofs_sim %>% 
+  widyr::pairwise_cor(base_lon, time, eof) %>% 
+  ggplot(aes(item1, item2)) +
+  geom_contour_fill(aes(z = correlation, fill = ..level..), na.fill = 1) +
+  geom_contour2(aes(z = correlation), size = 0.2) +
+  geom_text_contour(aes(z = correlation, stroke.color = ..level..), color = "black",
+                    stroke = 0.2) +
+  scale_fill_divergent("Correlation",
+                       super = ScaleDiscretised) +
+  scale_color_divergent(aesthetics = "stroke.color", guide = "none") +
+  scale_x_longitude() +
+  scale_y_longitude() +
+  coord_equal() 
+```
+
+Comparing Figure \@ref(fig:paiwise-cor-sim) with Figure \@ref(fig:paiwise-cor), the results of the simulation are very different! As espected, the correlation between indices decreases rather rapidly between adjacent longitudes, and it's near zero for the antipodes. 
+
+
+
+# Conslusion
+
+I think that CKV does bring up an important point. The fact that one can compute a global EOF doesn't mean that the observed pattern is indeed global. EOF is a statistical method not constrained by physics and as the simulated data shows, you can very well obtain an annular mode with data that doesn't vary annularly. 
+
+However, in the real atmosphere, the Southern Annular Mode does appear as a globally coherent annular mode. The SAM is safe. 

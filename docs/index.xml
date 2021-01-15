@@ -21,6 +21,18 @@ alterations. This is a place to organise those notes.
       <media:content url="http://eliocamp.github.io/scrapbook/posts/2021-01-14-enso-and-regression-to-the-mean/distill-preview.png" medium="image" type="image/png" width="1248" height="768"/>
     </item>
     <item>
+      <title>Does the Southern Annular Mode exist?</title>
+      <dc:creator>Elio Campitelli</dc:creator>
+      <link>http://eliocamp.github.io/scrapbook/posts/2021-01-15-sam-symmetry</link>
+      <description>Scavenging the literature on the Southern Annular Mode I came across two papers from the early 2000's which seem to question whether this mode is actually a global phenomenon and not a statistical artifact.</description>
+      <category>SAM</category>
+      <category>statistics</category>
+      <category>general circulation</category>
+      <guid>http://eliocamp.github.io/scrapbook/posts/2021-01-15-sam-symmetry</guid>
+      <pubDate>Wed, 15 Jan 2020 00:00:00 +0000</pubDate>
+      <media:content url="http://eliocamp.github.io/scrapbook/posts/2021-01-15-sam-symmetry/distill-preview.png" medium="image" type="image/png" width="1248" height="768"/>
+    </item>
+    <item>
       <title>The meridional structure of the Semiannual Oscillation</title>
       <dc:creator>Elio Campitelli</dc:creator>
       <link>http://eliocamp.github.io/scrapbook/posts/2021-01-15-sao-and-jet</link>

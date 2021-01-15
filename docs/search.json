@@ -6,14 +6,14 @@
       "description": "Some additional details about the blog",
       "author": [],
       "contents": "\n\n\n\n",
-      "last_modified": "2021-01-15T13:46:58-03:00"
+      "last_modified": "2021-01-15T20:36:25-03:00"
     },
     {
       "path": "index.html",
       "title": "The Scrapbook",
       "author": [],
       "contents": "\n\n\n\n",
-      "last_modified": "2021-01-15T13:46:59-03:00"
+      "last_modified": "2021-01-15T20:36:27-03:00"
     }
   ],
   "collections": ["posts/posts.json"]
