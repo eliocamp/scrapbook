@@ -9,7 +9,7 @@ author:
     affiliation: Centro de Investigaciones del Mar y la Atmósfera
     affiliation_url: http://www.cima.fcen.uba.ar/
 date: "`r Sys.Date()`"
-slug: wave4
+slug: enso-regression-to-mean
 categories:
   - ENSO
   - general circulation
@@ -19,6 +19,8 @@ output:
     toc: true
 bibliography: bibliography.bib
 compare_updates_url: https://github.com/eliocamp/scrapbook/blob/main/_posts/2021-01-14-enso-and-regression-to-the-mean/enso-and-regression-to-the-mean.Rmd
+twitter:
+  creator: "@d_olivaw"
 ---
 
 ```{r setup, include=FALSE}

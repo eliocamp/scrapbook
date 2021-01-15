@@ -8,7 +8,20 @@
 alterations. This is a place to organise those notes. 
 </description>
     <generator>Distill</generator>
-    <lastBuildDate>Fri, 15 Jan 2021 00:00:00 +0000</lastBuildDate>
+    <lastBuildDate>Wed, 15 Jan 2020 00:00:00 +0000</lastBuildDate>
+    <item>
+      <title>The meridional structure of the Semiannual Oscillation</title>
+      <dc:creator>Elio Campitelli</dc:creator>
+      <link>http://eliocamp.github.io/scrapbook/posts/2021-01-15-sao-and-jet</link>
+      <description>How to filter out extra-tropical variabilty to highlight the structure of the Semiannual Oscillation using just multiple linear regression.</description>
+      <category>Semiannual Oscillation</category>
+      <category>general circulation</category>
+      <category>tropics</category>
+      <category>stratosphere</category>
+      <guid>http://eliocamp.github.io/scrapbook/posts/2021-01-15-sao-and-jet</guid>
+      <pubDate>Wed, 15 Jan 2020 00:00:00 +0000</pubDate>
+      <media:content url="http://eliocamp.github.io/scrapbook/posts/2021-01-15-sao-and-jet/distill-preview.png" medium="image" type="image/png" width="1248" height="768"/>
+    </item>
     <item>
       <title>Analysis of "Global wave number-4 pattern in the southern subtropical sea surface temperature."</title>
       <dc:creator>Elio Campitelli</dc:creator>
@@ -17,7 +30,7 @@ alterations. This is a place to organise those notes.
       <category>zonal waves</category>
       <category>general circulation</category>
       <guid>http://eliocamp.github.io/scrapbook/posts/2021-01-14-wave4</guid>
-      <pubDate>Fri, 15 Jan 2021 00:00:00 +0000</pubDate>
+      <pubDate>Tue, 14 Jan 2020 00:00:00 +0000</pubDate>
       <media:content url="http://eliocamp.github.io/scrapbook/posts/2021-01-14-wave4/distill-preview.png" medium="image" type="image/png" width="960" height="403"/>
     </item>
   </channel>

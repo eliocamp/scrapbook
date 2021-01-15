@@ -7,7 +7,7 @@ author:
     url: https://eliocamp.github.io/
     affiliation: Centro de Investigaciones del Mar y la Atmósfera
     affiliation_url: http://www.cima.fcen.uba.ar/
-date: "`r Sys.Date()`"
+date: "2020-01-14"
 slug: wave4
 categories:
   - zonal waves 
@@ -16,8 +16,6 @@ output:
   distill::distill_article: default
 bibliography: bibliography.bib
 compare_updates_url: https://github.com/eliocamp/scrapbook/blob/main/_posts/2021-01-14-wave4/wave4.Rmd
-twitter:
-  creator: "@d_olivaw"
 ---
 
 
@@ -40,7 +38,7 @@ knitr::include_graphics(here::here("img", "wave4-fig1.png"))
 
 First things first. Download the data and try to reproduce their figure. 
 
-```{r helpers}
+```{r helpers, cache = FALSE}
 # packages
 library(magrittr)
 library(data.table)
@@ -211,7 +209,7 @@ corrs %>%
   geom_contour_fill(aes(z = correlation_reconstructed^2, 
                         fill = ..level..), breaks = seq(.1, 1, by = 0.1)) +
   quick_map +
-   geom_point(data = copy(points)[, id := NULL], shape = 21, fill = NA) +
+  geom_point(data = copy(points)[, id := NULL], shape = 21, fill = NA) +
   geom_point(data = copy(points), shape = 21, color = "black", fill =  "#de3e80") +
   scale_fill_viridis_c(oob = scales::squish,
                        super = ScaleDiscretised) +
