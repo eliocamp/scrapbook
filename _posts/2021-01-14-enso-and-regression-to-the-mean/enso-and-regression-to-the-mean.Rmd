@@ -1,0 +1,209 @@
+---
+title: ENSO and regression to the mean
+description: |
+  descirption
+draft: TRUE  
+author:
+  - name: Elio Campitelli
+    url: https://eliocamp.github.io/
+    affiliation: Centro de Investigaciones del Mar y la Atmósfera
+    affiliation_url: http://www.cima.fcen.uba.ar/
+date: "`r Sys.Date()`"
+slug: wave4
+categories:
+  - ENSO
+  - general circulation
+  - statistics
+output: 
+  distill::distill_article: 
+    toc: true
+bibliography: bibliography.bib
+compare_updates_url: https://github.com/eliocamp/scrapbook/blob/main/_posts/2021-01-14-enso-and-regression-to-the-mean/enso-and-regression-to-the-mean.Rmd
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, 
+                      code_folding = TRUE)
+knitr::knit_hooks$set(crop = knitr::hook_pdfcrop)
+```
+
+On a recent article, @cai2020b used  a perturbed ensemble of 40 members to show that members with relatively low El Niño Southern Oscillation (ENSO) variability at the beginning of the simulated period have a greater increase in ENSO variability towards the end of the simulated period than members with relatively high ENSO variability. They take this as evidence of ENSO self-regulation which would, if real, have important implications for future projections of ENSO variability under global warming. Here, I show that their results are not surprising, are likely product of simple regression to the mean and have no physical interpretation. 
+
+
+# Introduction
+
+The Community Earth System Model Large Ensemble model [@kay2015] consists of 40 climate simulations (members) that ran from 1920 to 2100 with identical external forcing and physics. Their only difference is a small, round-off error, perturbation in their atmospheric initial conditions. @cai2020b computed, for each member, the variability (standard deviation) of an index of Eastern-Pacific ENSO they call "E-index" for the first and last 50 years of the simulation. Owing to the effect of the various initial conditions, the variability in the E-index varied between members. I show their main result in Figure \@ref(fig:reproduction), which reproduces their Figure 1b. It shows a negative correlation between the initial E-index variability and its future change, defined as the difference between the final and the initial E-index variability.
+
+```{r helpers}
+library(magrittr)
+library(data.table)
+library(ggplot2)
+library(patchwork)
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+theme_set(theme_minimal(base_size = 10) + theme(panel.grid = element_blank()))
+```
+
+
+```{r obs_paper}
+obs_paper <- fread(here::here("public_data", "enso-data-fig1.csv")) %>% 
+  .[, final := initial + change]
+moments <- obs_paper[, .(mean_initial = mean(initial), 
+                         sd_initial = sd(initial),
+                         mean_final = mean(final),
+                         sd_final = sd(final))]
+```
+
+
+```{r sims_normal}
+set.seed(42)
+members <- 40
+B <- 10000
+sims_normal <- CJ(sim = seq_len(B), member = seq_len(members)) %>% 
+  .[, `:=`(initial = rnorm(.N, moments$mean_initial, moments$sd_initial),
+           final   = rnorm(.N, moments$mean_final, moments$sd_final))] %>% 
+  .[, change := final - initial]
+```
+
+
+(ref:caption-reproduction) Reproduction of Figure 1b from @cai2020b based on digitised values. The horizontal axis shows the initial variability of their ENSO index for the first 50 years of simulation (1920 -- 1969) and the vertical axis shows the difference between the variability of their ENSO index for the last 50 years of the simulation (2050 -- 2099) and the first 50 years.
+
+```{r reproduction, fig.cap = "(ref:caption-reproduction)"}
+cor <- obs_paper[, cor.test(initial, change)]
+
+cor_text <- with(cor, paste0("R = ", signif(estimate, 2), "\nP ~ ", signif(p.value, 2)))
+
+obs_paper[, rank := cut_number(initial, 3)]
+
+obs_paper %>% 
+  ggplot(aes(initial, change)) +
+  geom_point() +
+  geom_smooth(method = "lm", color = "#0e9a83") +
+  annotate("text", label = cor_text, x = .51, y = 0, hjust = 0, size = 4) +
+  scale_x_continuous("Initial E-index variability (s.d.)") +
+  scale_y_continuous("Change in E-index variability (s.d.)") 
+```
+
+From this negative correlation, @cai2020b conclude that "strikingly, in experiments with initially higher ENSO variability (...), [its] amplitude in the future a century later [is] systematically smaller, and vice versa". They attribute this to a novel mechanism of self-regulation involving non-linear thermal damping through upper-ocean heat exchange and stratification. 
+
+# Simulations
+
+To test how striking this result really is, I created $`r B`$ simulations of 40 pairs of random numbers representing the initial and final variability of the E-index for 40 hypothetical ensemble members. The random numbers were taken from independent normal distribution with $\mu=`r with(moments, signif(mean_initial, 2))`$ and $\sigma = `r with(moments, signif(sd_initial, 2))`$ for the initial variability and  $\mu=`r with(moments, signif(mean_final, 2))`$, $\sigma = `r with(moments, signif(sd_final, 2))`$ for the final variability. These are the mean and standard deviation from the observed values derived from Figure \@ref(fig:reproduction).
+
+As each simulated observation is independent from the rest, this simulations serve as a plausible model for the null hypothesis that the initial variability of ENSO does not influence it's future change. 
+
+```{r define-functions}
+two_plots <- function(sim, obs, n = 1:10) {
+  fits <- sim[, metR::FitLm(change, initial, se = TRUE), by = sim] %>% 
+    .[term != "(Intercept)"] %>% 
+    .[, p_value := pt(abs(estimate)/std.error, df, lower.tail = FALSE), by = sim]
+  
+  obs_fits <- obs[, metR::FitLm(change, initial, se = TRUE)] %>% 
+    .[term != "(Intercept)"] %>% 
+    .[, p_value := pt(abs(estimate)/std.error, df, lower.tail = FALSE)]
+  
+  p_value <- fits[, mean(r.squared >= obs_fits$r.squared)]
+  
+  fit_density <- as.data.table(density(fits[term != "(Intercept)"]$r.squared)[c("x", "y")])
+  
+  x_pval <- mean(fits[term != "(Intercept)"][r.squared >= obs_fits$r.squared]$r.squared)
+  y_pval <- mean(fit_density$y)
+  
+  sim[sim %in% 1:10] %>% 
+    .[, change := change] %>% 
+    ggplot(aes(initial, change)) +
+    geom_point(size = 0.4, alpha = 0.3) + 
+    geom_point(data = obs, size = 0.7) +
+    geom_smooth(data = obs, method = "lm", se = FALSE, size = 1.4,
+                fullrange = TRUE, color = "#0e9a83") +
+    geom_smooth(method = "lm", aes(group = sim), se = FALSE, fullrange = TRUE, 
+                color = "black", size = 0.1, alpha = 0.5) +
+    scale_x_continuous("Initial E-index variability (s.d.)") +
+    scale_y_continuous("Change in E-index variability (s.d.)") +
+  # coord_equal()  +
+  
+  fit_density %>% 
+    ggplot(aes(x, y)) +
+    geom_area(data = ~.x[x >= obs_fits$r.squared], fill = "#4d4d4d") +
+    annotate("text", size = 6, color = "white",
+             label = scales::percent(p_value), x = x_pval, y = y_pval) +
+    geom_line() +
+    geom_vline(xintercept = obs_fits$r.squared, color = "#0e9a83", size = 1.4) +
+    scale_x_continuous("r²") +
+    scale_y_continuous(NULL) +
+    
+    
+    plot_annotation(tag_levels = "a")
+}
+
+compute_pvalue <- function(sim, obs) {
+  fits <- sim[, metR::FitLm(change, initial, se = TRUE), by = sim] %>% 
+    .[term != "(Intercept)"] %>% 
+    .[, p_value := pt(abs(estimate)/std.error, df, lower.tail = FALSE), by = sim]
+  
+  obs_fits <- obs[, metR::FitLm(change, initial, se = TRUE)] %>% 
+    .[term != "(Intercept)"] %>% 
+    .[, p_value := pt(abs(estimate)/std.error, df, lower.tail = FALSE)]
+  
+  fits[, mean(r.squared >= obs_fits$r.squared)]
+}
+```
+
+
+(ref:caption-sim) a. Ten simulated ensembles of 40 members drawn from random numbers (see description in text) in small dot and their linear regression in fine lines. The observed values from @cai2020b in big dots and the linear regression in think, green. b. Estimated probability density of the coefficient of determination ($r^2$) under the null hypothesis model. The vertical bar shows the observed $r^2$ and the shaded area is the proportion of simulated samples from the null hypothesis model with a $r^2$ equal or greater than the observed one.  
+
+```{r random-normal, fig.cap = "(ref:caption-sim)", layout = "l-page", fig.height=3}
+two_plots(sims_normal, obs_paper)
+```
+
+Figure \@ref(fig:random-normal).a shows a random sample of 10 of these simulations in small dots and their respective linear fit in fine lines. Comparing these random simulations with the observed values taken from @cai2020b -- shown in big dots and thick, green line -- puts into perspective the strength of their evidence. The spread of the simulated data is very similar to the real data and all 10 simulation have a steeper regression slope. Both sets are so similar that it would be virtually impossible to distinguish between the simulated and real data if not for the different size of the points. 
+
+```{r p_value}
+p_value <- compute_pvalue(sims_normal, obs_paper)
+```
+
+To quantify how surprising the observed effect actually is, Figure \@ref(fig:random-normal).b shows the estimated probability density of the coefficient of determination ($r^2$) from the linear fit of the `r B` simulations and the observed value as a vertical line. `r scales::percent(p_value)` of simulations show an $r^2$ equal or greater than the observed one. This  translates to a p-value of `r signif(p_value, 2)`; significantly higher than $`r signif(cor$p.value, 2)`$, naively computed from the linear regression.  
+
+Then, it's evidently clear that under this model of the null hypothesis the observed negative correlation is not only unsurprising, but completely expected. 
+
+The fact that the initial value of a variable is negatively correlated with its "future change" is one of the manifestation of the general principle of regression to the mean first observed by Galton in 1889 [@francisgalton1889]. He noted that very tall parents tended to have relatively shorter children while tall children tended to have relatively shorter parents. 
+
+In a perturbed ensemble experiment some ensemble members will have higher initial ENSO variability than average, while other will have lower ENSO variability than average. If this initial ENSO variability is completely independent of further ENSO variability (e.g. the null hypothesis is true), then both groups are equally likely to have average variability further down the simulation. Thus, members which a high initial ENSO variability will tend to show -- on average -- a negative change in variability, an vice versa.
+
+
+# Formal formula
+
+It's straightforward to show this effect mathematically. The correlation between two variables $x$ and $z = y - x$ can be written as:
+
+\begin{equation}
+(\#eq:cor-full)
+\mathrm{cor}(x, y - x) = \frac{\mathrm{cov(x, y) - \mathrm{var}(x)}}{\sqrt{\mathrm{var}(x)\mathrm{var}(y) + \mathrm{var}(x)^2 - 2\mathrm{var}(x)\mathrm{cov}(x, y)}}
+\end{equation}
+
+If $x$ and $y$ are independent random variables, $\mathrm{cov}(x, y) = 0$ vanish and Equation \@ref(eq:cor-full) simplifies to 
+
+\begin{equation}
+(\#eq:cor)
+\mathrm{cor}(x, y - x)= \frac{-1}{\sqrt{\mathrm{var}(y)/\mathrm{var}(x) +1}}
+\end{equation}
+
+This final formula shows that the correlation between $x$ and $y - x$ is bound to be negative and its magnitude depends only on the relationship between their variances. That is, if the variance of $y$ is greater than the variance of $x$, then the correlation will be small, and vice versa. 
+
+Applying Equation \@ref(eq:cor) to the issue at hand, $x$ becomes the initial ENSO variability and $y$, the final ENSO variability and $\mathrm{var}(x)$, $\mathrm{var}(y)$ are the ensemble spread in initial and final ENSO variability, respectively. This means that, even in the case of no linear relation between initial and final variability, any process -- either driven by physics or models -- which reduces ensemble spread will lead to an even stronger negative linear relationship between the variables. 
+
+```{r calculations}
+alpha_obs <- moments[, sd_final/sd_initial]^2
+pred <- -1/sqrt(alpha_obs + 1)
+```
+
+In the case of equal variances, Equation \@ref(eq:cor) predicts a correlation of  $-1/\sqrt{2} \sim -0.71$. The observed correlation of `r signif(cor$estimate, 2)` (Figure \@ref(fig:reproduction)) is stronger This is explained by the reduced ensemble spread in ENSO variability between the initial and final periods, as the final spread is around `r scales::percent(alpha_obs)` of the initial spread. For this value, Equation \@ref(eq:cor) predicts a correlation of `r signif(pred, 2)`, which is very close (if a bit stronger) to the observed value.
+
+
+<!-- Note that in Equation \@ref(eq:cor_full) the mean values of $x$ and $y$ have no role in the correlation between $x$ and $y - x$. In the context of ENSO variability, this trnaslates to the fact that the mean change in ENSO variability is independent  -->
+
+# Conclusion
+
+The previous analysis puts the strength of @cai2020b evidence into perspective. That the change in ENSO variability is greater in ensemble members with initially low ENSO variability is not at all surprising. By simulating the null hypothesis, I show that a negative correlations as strong or stronger than the one observed by @cai2020b can be expected `r scales::percent(p_value)` of the time. 
+
+These strong negative correlation can be explained by regression towards the mean and reduced ensemble spread in the final period compared to the initial period. I don't think it is possible to identify the source of the spread reduction. It might be a real response to the forcing scenario or inability of the ensemble to capture all the sources of variability. In particular, all members share the same physics and boundary conditions, therefore I believe it would not be unexpected if all members slowly converged to a similar state. @kay2015's Figure 2 does appear to show that the ensemble spread is slightly higher before 1970. Of note, recently @bengtsson2019 observed secular reductions of ensemble spread in mean surface temperature in an ensemble whose members where also all forced with the same radiative conditions. 
+
+Failing to account for regression to the mean is a fallacy that affects many fields of science -- including behavioural science [@kelly2005] and medicine [@chuang-stein1997] -- and features prominently in popular culture, such as the "Sports Illustrated cover jinx" -- the perception that an athlete's performance will be "cursed" after appearing in the cover of Sports Illustrated [@goldacre2008]. @cai2020b is not the first paper nor will be the last to fall for it. 
