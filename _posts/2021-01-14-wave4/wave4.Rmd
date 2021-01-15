@@ -16,6 +16,8 @@ output:
   distill::distill_article: default
 bibliography: bibliography.bib
 compare_updates_url: https://github.com/eliocamp/scrapbook/blob/main/_posts/2021-01-14-wave4/wave4.Rmd
+twitter:
+  creator: "@d_olivaw"
 ---
 
 
