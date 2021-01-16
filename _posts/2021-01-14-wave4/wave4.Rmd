@@ -306,7 +306,7 @@ lon_eofs <- lapply(unique(sst$lon), function(base_lon) {
 ```
 
 
-```{r cor-pairwise, fig.cap = "Pairwise correlation of \"local wave-4\" indices."}
+```{r cor-pairwise, fig.cap = "Pairwise correlation of \"local wave-4\" indices.", layout = "l-body"}
 lon_eofs %>% 
   widyr::pairwise_cor(base_lon, time, eof) %>% 
   ggplot(aes(item1, item2)) +
