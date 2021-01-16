@@ -30,11 +30,11 @@ In "The Structure and Composition of the Annular Modes in an Aquaplanet General 
 
 If this is correct and is also valid for the real atmosphere (as opposed to their simple models), then it throws a monkey wrench to any attempts to understand the Souther Annular Mode --it doesn't even exist as a physically meaningful entity. 
 
-Here, I usea reanalysis data to show that, while CKV raises important points, the concept of the global SAM is safe. 
+Here, I use reanalysis data to show that, while CKV raises important points, the concept of the global SAM is safe. 
 
 # CKV analysis
 
-CKV ran an aquaplanet model and they point out that the first EOF of sea level pressure descirbes an almost perfect annular mode. 
+CKV ran an aquaplanet model and they point out that the first EOF of sea level pressure describes an almost perfect annular mode. 
 
 
 (ref:ckv-slp-cap) Figure 4 from @cash2002: Leading EOF of winter season surface pressure. (a) Normalized, nondimensional EOF of the zonal-mean surface pressure. (b) Regression map of zonal-mean surface pressure against the principal component of the leading EOF. Amplitude is the response to 1 std dev in the principal component. (Units: mb.) (c) As in (b), except for the zonally varying pressure. Solid lines are positive, dashed lines are negative, and a heavy contour denotes the zero line. Contour interval is 2 mb
@@ -53,9 +53,9 @@ The problem is that when the look at particular events of high / low values of E
 knitr::include_graphics(here::here("img", "ckv-sam-cases.png"))
 ```
 
-Inspired by this disconnect between the structure of the EOF and the individual cases, they try a different approach. They go back to using teleconnection maps (correlation between SLP at one point and the rest of the globe) based on various latitudes. They conclude that negative correlations are maximised for points at 65º and 35º (\@ref(fig:ckv-events))
+Inspired by this disconnect between the structure of the EOF and the individual cases, they try a different approach. They go back to using teleconnection maps (correlation between SLP at one point and the rest of the globe) based on various latitudes. They conclude that negative correlations are maximised for points at 65º and 35º (Figure \@ref(fig:ckv-events))
 
-(ref:ckv-correlation-cap) Exerpt or FIgure 9 from @cash2002: One-point correlation maps for surface pressure. (a) Base point at 358, (b) base point at 658, (c) base point at 508, and (d) base point at Pole. Solid contours are positive, dashed contours are negative, and a heavy contour denotes the zero line. Contour interval is 0.1. Correlation maps are averages taken over all longitudes, for a given latitude, where base points have been rotated to coincide.
+(ref:ckv-correlation-cap) Excerpt or FIgure 9 from @cash2002: One-point correlation maps for surface pressure. (a) Base point at 358, (b) base point at 658, (c) base point at 508, and (d) base point at Pole. Solid contours are positive, dashed contours are negative, and a heavy contour denotes the zero line. Contour interval is 0.1. Correlation maps are averages taken over all longitudes, for a given latitude, where base points have been rotated to coincide.
 
 ```{r ckv-correlation, fig.cap = "SLP de casos seleccionados con eventos positivos (izquierda) y negativos (derecha)", out.extra="class=external", echo = FALSE}
 knitr::include_graphics(here::here("img", "ckv-sam-teleconnection.png"))
@@ -69,7 +69,7 @@ Strong stuff.
 
 # Further analysis
 
-CKV's proposal is intriguing, does the real atmosphere behaves thusly? The problem they put forward is very similar to the problem I had with @senapati2021 [here](/posts/2021-01-14-wave4/) so I'll use similar methods. 
+CKV's proposal is intriguing, does the real atmosphere behaves thusly? The problem they put forward is very similar to the problem I had with @senapati2021 [here](/scrapbook/posts/2021-01-14-wave4/) so I'll use similar methods. 
 
 
 ```{r helpers}
@@ -153,7 +153,7 @@ sam$right %>%
   scale_fill_divergent_discretised(guide = "none")
 ```
 
-And now let's compute localised SAM indices. At each longitude I will take a section of the data located between 45º West and 45ª East of it and project the geopotential height field onto the corresponding SAM pattern (in Figure \@ref(fig:sam-pattern)). The result is one "local SAM index" for each longitude. 
+And now let's compute localised SAM indices. At each longitude I will take a section of the data located between 45º West and 45º East of it and project the geopotential height field onto the corresponding SAM pattern (in Figure \@ref(fig:sam-pattern)). The result is one "local SAM index" for each longitude. 
 
 
 ```{r lon_eofs, cache = TRUE}
@@ -168,7 +168,7 @@ hgt2 <- sam$right %>%
   qwrap(lon = c(0, 360) ~ c(-lon_halfwidth, 360 + lon_halfwidth))
 
 # For each longitude, compute EOF using a segment of lon_width width
-# centered in that longitude.
+# centred in that longitude.
 lon_eofs <- lapply(unique(hgt$lon), function(base_lon) {
   hgt2 %>% 
     .[lon %between% (base_lon + c(-lon_halfwidth, lon_halfwidth))] %>% 
@@ -190,7 +190,7 @@ lon_eofs %>%
   geom_contour2(aes(z = correlation), size = 0.2) +
   geom_text_contour(aes(z = correlation, stroke.color = ..level..), color = "black",
                     stroke = 0.2) +
-  scale_fill_divergent("Correlation",
+  scale_fill_divergent("Correlation", 
                        super = ScaleDiscretised) +
   scale_color_divergent(aesthetics = "stroke.color", guide = "none") +
   scale_x_longitude() +
@@ -339,7 +339,7 @@ hgt2 <- sim_eof$right %>%
   qwrap(lon = c(0, 360) ~ c(-lon_halfwidth, 360 + lon_halfwidth))
 
 # For each longitude, compute EOF using a segment of lon_width width
-# centered in that longitude.
+# centred in that longitude.
 lon_eofs_sim <- lapply(unique(hgt$lon), function(base_lon) {
   hgt2 %>% 
     .[lon %between% (base_lon + c(-lon_halfwidth, lon_halfwidth))] %>% 
@@ -369,7 +369,7 @@ lon_eofs_sim %>%
   coord_equal() 
 ```
 
-Comparing Figure \@ref(fig:paiwise-cor-sim) with Figure \@ref(fig:paiwise-cor), the results of the simulation are very different! As espected, the correlation between indices decreases rather rapidly between adjacent longitudes, and it's near zero for the antipodes. 
+Comparing Figure \@ref(fig:paiwise-cor-sim) with Figure \@ref(fig:paiwise-cor), the results of the simulation are very different! As expected, the correlation between indices decreases rather rapidly between adjacent longitudes, and it's near zero for the antipodes. 
 
 
 

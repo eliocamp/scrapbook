@@ -227,7 +227,7 @@ series <- eofs$right %>% copy() %>%
   .[, basin := ifelse(lon %between% c(150, 290), "pacific", "atlantic")] %>% 
   setnames("sst", "EOF") %>% 
   .[sst, on = c("lon", "lat")] %>% 
-  .[, cor(sst, EOF), by = .(time, basin)]
+  .[, weighted.mean(sst*EOF, cos(lat*pi/180)), by = .(time, basin)]
 ```
 
 
@@ -239,16 +239,15 @@ series %>%
   geom_point() +
   geom_label(data = ~.x[, .(cor(pacific, atlantic))], 
             aes(label = paste0("cor= ", signif(V1, 2))), 
-            x = -0.6, y = .5, size = 7) +
+            x = -0.0035, y = 0.001, size = 7) +
   geom_smooth(method = "lm") +
   scale_x_continuous("Pacific index") +
   scale_y_continuous("Atlantic-Indian index")
 ```
 
-I mean... A correlation of 0.37 is not nothing, but it's also not a lot. 
+I mean... A correlation of 0.44 is not nothing, but it's also not a lot. 
 
-
-Now one last test. Let's do the correlation map of each index. Again, if the pattern is really global, then the correlation map of the Pacific Index should also show the Atlantic-Indian pattern and vice versa.
+Let's do the correlation map of each index. Again, if the pattern is really global, then the correlation map of the Pacific Index should also show the Atlantic-Indian pattern and vice versa.
 
 
 ```{r patterns}
@@ -276,6 +275,54 @@ patterns %>%
 ```
 
 Again... kinda? For the Atlantic-Indian index, the Pacific signal is barely there and it's actually completely missing in the Western Pacific. And for the Pacific index, the there is *some* signal in the Indian ocean, but barely any signal in the Atlantic.
+
+
+Now one last test. To extend this analysis, I'll do the same computation but for every longitude. That is, for each longitude, take a 140º wide section of SST centred in that longitude and project the corresponding wave-4 pattern onto it to get a time-varying index. The result, then, is one "local wave-4 index" for each longitude. 
+
+
+```{r lon_eofs, cache = TRUE}
+lon_width <- diff(c(150, 290))
+lon_halfwidth <- lon_width/2
+
+# "extended" version of geopotential height 
+# 
+sst2 <- eofs$right %>% copy() %>% 
+  .[PC == "PC2"] %>% 
+  setnames("sst", "EOF") %>% 
+  sst[., on = .NATURAL] %>% 
+  ggperiodic::qwrap(lon = c(0, 360) ~ c(-lon_halfwidth, 360 + lon_halfwidth))
+
+# For each longitude, compute EOF using a segment of lon_width width
+# centered in that longitude.
+lon_eofs <- lapply(unique(sst$lon), function(base_lon) {
+  sst2 %>% 
+    .[lon %between% (base_lon + c(-lon_halfwidth, lon_halfwidth))] %>% 
+    .[, .(eof = weighted.mean(sst*EOF, cos(lat*pi/180))),
+      by = time] %>% 
+    .[, base_lon := base_lon] %>% 
+    .[]
+}) %>% 
+  rbindlist()
+```
+
+
+```{r cor-pairwise, fig.cap = "Pairwise correlation of \"local wave-4\" indices."}
+lon_eofs %>% 
+  widyr::pairwise_cor(base_lon, time, eof) %>% 
+  ggplot(aes(item1, item2)) +
+  geom_contour_fill(aes(z = correlation, fill = ..level..), na.fill = 1) +
+  geom_contour2(aes(z = correlation), size = 0.2) +
+  geom_text_contour(aes(z = correlation, stroke.color = ..level..), color = "black",
+                    stroke = 0.2) +
+  scale_fill_divergent("Correlation",
+                       super = ScaleDiscretised) +
+  scale_color_divergent(aesthetics = "stroke.color", guide = "none") +
+  scale_x_longitude() +
+  scale_y_longitude() +
+  coord_equal() 
+```
+
+Figure \@ref(fig:cor-pairwise) shows the pairwise correlation between all indices. Correlation drop rapidly with distance, but there are three clearly defined regions of high correlation that could represent various teleconnected areas. Perhaps not coincidentally, they correspond approximately to the three oceanic basins. The Indian between 0º and 120ºE, Western Pacific between 120ºE and 120ºW and Eastern Pacific and Atlantic between 120ºW and 0º.
 
 
 `r emo::ji("shrug")`. Take it as you will. From what I've seen here, I remain unconvinced that this is a global pattern of SST. 

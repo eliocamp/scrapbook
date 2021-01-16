@@ -3452,9 +3452,9 @@ distill-header .nav a {
 <h1 id="introduction">Introduction</h1>
 <p>In “The Structure and Composition of the Annular Modes in an Aquaplanet General Circulation Model” <span class="citation" data-cites="cash2002">(Cash, Kushner, and Vallis <a href="#ref-cash2002" role="doc-biblioref">2002</a>)</span> and “Zonal Asymmetries, Teleconnections, and Annular Patterns in a GCM” <span class="citation" data-cites="cash2005">(Cash, Kushner, and Vallis <a href="#ref-cash2005" role="doc-biblioref">2005</a>)</span> (CKV from now on), the authors analyse simulations on an aquaplanet model (in the former) and with some zonal asymmetries (in the latter). In particular, they study the configuration of their “annular modes” or, rather, their leading EOF. Their conclusion is that annular modes as seen from the leading EOF are a statistical artifact and that, in fact, they actually describe localised events.</p>
 <p>If this is correct and is also valid for the real atmosphere (as opposed to their simple models), then it throws a monkey wrench to any attempts to understand the Souther Annular Mode –it doesn’t even exist as a physically meaningful entity.</p>
-<p>Here, I usea reanalysis data to show that, while CKV raises important points, the concept of the global SAM is safe.</p>
+<p>Here, I use reanalysis data to show that, while CKV raises important points, the concept of the global SAM is safe.</p>
 <h1 id="ckv-analysis">CKV analysis</h1>
-<p>CKV ran an aquaplanet model and they point out that the first EOF of sea level pressure descirbes an almost perfect annular mode.</p>
+<p>CKV ran an aquaplanet model and they point out that the first EOF of sea level pressure describes an almost perfect annular mode.</p>
 
 <div class="layout-chunk" data-layout="l-body">
 <div class="figure"><span id="fig:ckv-slp"></span>
@@ -3474,7 +3474,7 @@ Figure 2: Excerpt from Figure 7 from <span class="citation" data-cites="cash2002
 </p>
 </div>
 </div>
-<p>Inspired by this disconnect between the structure of the EOF and the individual cases, they try a different approach. They go back to using teleconnection maps (correlation between SLP at one point and the rest of the globe) based on various latitudes. They conclude that negative correlations are maximised for points at 65º and 35º (<a href="#fig:ckv-events">2</a>)</p>
+<p>Inspired by this disconnect between the structure of the EOF and the individual cases, they try a different approach. They go back to using teleconnection maps (correlation between SLP at one point and the rest of the globe) based on various latitudes. They conclude that negative correlations are maximised for points at 65º and 35º (Figure <a href="#fig:ckv-events">2</a>)</p>
 
 <div class="layout-chunk" data-layout="l-body">
 <div class="figure"><span id="fig:ckv-correlation"></span>
@@ -3490,7 +3490,7 @@ Figure 3: SLP de casos seleccionados con eventos positivos (izquierda) y negativ
 </blockquote>
 <p>Strong stuff.</p>
 <h1 id="further-analysis">Further analysis</h1>
-<p>CKV’s proposal is intriguing, does the real atmosphere behaves thusly? The problem they put forward is very similar to the problem I had with <span class="citation" data-cites="senapati2021">Senapati, Dash, and Behera (<a href="#ref-senapati2021" role="doc-biblioref">2021</a>)</span> <a href="/posts/2021-01-14-wave4/">here</a> so I’ll use similar methods.</p>
+<p>CKV’s proposal is intriguing, does the real atmosphere behaves thusly? The problem they put forward is very similar to the problem I had with <span class="citation" data-cites="senapati2021">Senapati, Dash, and Behera (<a href="#ref-senapati2021" role="doc-biblioref">2021</a>)</span> <a href="/scrapbook/posts/2021-01-14-wave4/">here</a> so I’ll use similar methods.</p>
 <div class="layout-chunk" data-layout="l-body">
 <details>
 <summary>Show code</summary>
@@ -3598,7 +3598,7 @@ Figure 4: Spatial pattern of the leading EOF of 700 hPa monthly geopotential hei
 </p>
 </div>
 </div>
-<p>And now let’s compute localised SAM indices. At each longitude I will take a section of the data located between 45º West and 45ª East of it and project the geopotential height field onto the corresponding SAM pattern (in Figure <a href="#fig:sam-pattern">4</a>). The result is one “local SAM index” for each longitude.</p>
+<p>And now let’s compute localised SAM indices. At each longitude I will take a section of the data located between 45º West and 45º East of it and project the geopotential height field onto the corresponding SAM pattern (in Figure <a href="#fig:sam-pattern">4</a>). The result is one “local SAM index” for each longitude.</p>
 <div class="layout-chunk" data-layout="l-body">
 <details>
 <summary>Show code</summary>
@@ -3614,7 +3614,7 @@ Figure 4: Spatial pattern of the leading EOF of 700 hPa monthly geopotential hei
   <span class="fu"><a href="https://rdrr.io/pkg/ggperiodic/man/qwrap.html">qwrap</a></span><span class="op">(</span>lon <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">360</span><span class="op">)</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="op">-</span><span class="va">lon_halfwidth</span>, <span class="fl">360</span> <span class="op">+</span> <span class="va">lon_halfwidth</span><span class="op">)</span><span class="op">)</span>
 
 <span class="co"># For each longitude, compute EOF using a segment of lon_width width</span>
-<span class="co"># centered in that longitude.</span>
+<span class="co"># centred in that longitude.</span>
 <span class="va">lon_eofs</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html">lapply</a></span><span class="op">(</span><span class="fu"><a href="https://Rdatatable.gitlab.io/data.table/reference/duplicated.html">unique</a></span><span class="op">(</span><span class="va">hgt</span><span class="op">$</span><span class="va">lon</span><span class="op">)</span>, <span class="kw">function</span><span class="op">(</span><span class="va">base_lon</span><span class="op">)</span> <span class="op">{</span>
   <span class="va">hgt2</span> <span class="op">%&gt;%</span> 
     <span class="va">.</span><span class="op">[</span><span class="va">lon</span> <span class="op">%between%</span> <span class="op">(</span><span class="va">base_lon</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="op">-</span><span class="va">lon_halfwidth</span>, <span class="va">lon_halfwidth</span><span class="op">)</span><span class="op">)</span><span class="op">]</span> <span class="op">%&gt;%</span> 
@@ -3640,7 +3640,7 @@ Figure 4: Spatial pattern of the leading EOF of 700 hPa monthly geopotential hei
   <span class="fu"><a href="https://rdrr.io/pkg/metR/man/geom_contour2.html">geom_contour2</a></span><span class="op">(</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html">aes</a></span><span class="op">(</span>z <span class="op">=</span> <span class="va">correlation</span><span class="op">)</span>, size <span class="op">=</span> <span class="fl">0.2</span><span class="op">)</span> <span class="op">+</span>
   <span class="fu"><a href="https://rdrr.io/pkg/metR/man/geom_text_contour.html">geom_text_contour</a></span><span class="op">(</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html">aes</a></span><span class="op">(</span>z <span class="op">=</span> <span class="va">correlation</span>, stroke.color <span class="op">=</span> <span class="va">..level..</span><span class="op">)</span>, color <span class="op">=</span> <span class="st">&quot;black&quot;</span>,
                     stroke <span class="op">=</span> <span class="fl">0.2</span><span class="op">)</span> <span class="op">+</span>
-  <span class="fu"><a href="https://rdrr.io/pkg/metR/man/scale_divergent.html">scale_fill_divergent</a></span><span class="op">(</span><span class="st">&quot;Correlation&quot;</span>,
+  <span class="fu"><a href="https://rdrr.io/pkg/metR/man/scale_divergent.html">scale_fill_divergent</a></span><span class="op">(</span><span class="st">&quot;Correlation&quot;</span>, 
                        super <span class="op">=</span> <span class="va">ScaleDiscretised</span><span class="op">)</span> <span class="op">+</span>
   <span class="fu"><a href="https://rdrr.io/pkg/metR/man/scale_divergent.html">scale_color_divergent</a></span><span class="op">(</span>aesthetics <span class="op">=</span> <span class="st">&quot;stroke.color&quot;</span>, guide <span class="op">=</span> <span class="st">&quot;none&quot;</span><span class="op">)</span> <span class="op">+</span>
   <span class="fu"><a href="https://rdrr.io/pkg/metR/man/scale_longitude.html">scale_x_longitude</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span>
@@ -3833,7 +3833,7 @@ Figure 8: Leading EOF of simulated geopotential height fields.
   <span class="fu"><a href="https://rdrr.io/pkg/ggperiodic/man/qwrap.html">qwrap</a></span><span class="op">(</span>lon <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">360</span><span class="op">)</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="op">-</span><span class="va">lon_halfwidth</span>, <span class="fl">360</span> <span class="op">+</span> <span class="va">lon_halfwidth</span><span class="op">)</span><span class="op">)</span>
 
 <span class="co"># For each longitude, compute EOF using a segment of lon_width width</span>
-<span class="co"># centered in that longitude.</span>
+<span class="co"># centred in that longitude.</span>
 <span class="va">lon_eofs_sim</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html">lapply</a></span><span class="op">(</span><span class="fu"><a href="https://Rdatatable.gitlab.io/data.table/reference/duplicated.html">unique</a></span><span class="op">(</span><span class="va">hgt</span><span class="op">$</span><span class="va">lon</span><span class="op">)</span>, <span class="kw">function</span><span class="op">(</span><span class="va">base_lon</span><span class="op">)</span> <span class="op">{</span>
   <span class="va">hgt2</span> <span class="op">%&gt;%</span> 
     <span class="va">.</span><span class="op">[</span><span class="va">lon</span> <span class="op">%between%</span> <span class="op">(</span><span class="va">base_lon</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="op">-</span><span class="va">lon_halfwidth</span>, <span class="va">lon_halfwidth</span><span class="op">)</span><span class="op">)</span><span class="op">]</span> <span class="op">%&gt;%</span> 
@@ -3875,7 +3875,7 @@ Figure 9: Same as Figure <a href="#fig:paiwise-cor">5</a> but for the simulated 
 </p>
 </div>
 </div>
-<p>Comparing Figure <a href="#fig:paiwise-cor-sim">9</a> with Figure <a href="#fig:paiwise-cor">5</a>, the results of the simulation are very different! As espected, the correlation between indices decreases rather rapidly between adjacent longitudes, and it’s near zero for the antipodes.</p>
+<p>Comparing Figure <a href="#fig:paiwise-cor-sim">9</a> with Figure <a href="#fig:paiwise-cor">5</a>, the results of the simulation are very different! As expected, the correlation between indices decreases rather rapidly between adjacent longitudes, and it’s near zero for the antipodes.</p>
 <h1 id="conslusion">Conslusion</h1>
 <p>I think that CKV does bring up an important point. The fact that one can compute a global EOF doesn’t mean that the observed pattern is indeed global. EOF is a statistical method not constrained by physics and as the simulated data shows, you can very well obtain an annular mode with data that doesn’t vary annularly.</p>
 <p>However, in the real atmosphere, the Southern Annular Mode does appear as a globally coherent annular mode. The SAM is safe.</p>
