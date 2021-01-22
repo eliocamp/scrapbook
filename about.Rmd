@@ -1,14 +1,21 @@
 ---
-title: "About this blog"
-description: |
-  Some additional details about the blog
+title: "Elio Campitelli"
+image: "img/avatar.jpg"
+color1: "#a56de2"
+color2: "#7239b3"
+angle: 135
+links:
+  - label: Twitter
+    url: "https://twitter.com/d_olivaw"
+  - label: GitHub
+    url: "https://github.com/eliopcamp"
+  - label: Código R
+    url: "https://eliocamp.github.io/codigo-r"
+output:
+  postcards::onofre
 ---
+ 
+When I’m reading a paper I have the (bad) habit of spending way too much time trying to reproduce the results and tweak the analysis. This is both to check that I understood what the authors did and also to check if the results are robust.
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE)
-```
+So I decided that instead of rotting in my hard-drive, I’ll publish these quick-and-dirty analysis here for others to see and, hopefully, benefit from. If you find something here that you like, feel free to give me a shout-out on twitter and/or a citation or two on a published paper.
 
-
-When I'm reading a paper I have the (bad) habit of spending way too much time trying to reproduce the results and tweak the analysis. This is both to check that I understood what the authors did and also to check if the results are robust. 
-
-So I decided that instead of rotting in my hard-drive, I'll publish these quick-and-dirty analysis here for others to see and, hopefully, benefit from. If you find something here that you like, feel free to give me a shout-out on [twitter](https://twitter.com/d_olivaw) and/or a citation or two on a published paper.  
