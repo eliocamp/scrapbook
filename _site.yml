@@ -19,6 +19,7 @@ output:
     self_contained: false
 base_url: http://eliocamp.github.io/scrapbook
 repository_url: http://github.com/eliocamp/scrapbook
+favicon: "img/favicon.png"
 collections:
   posts:
     feed_items_max: false

@@ -7,6 +7,11 @@
     <description>When reading papers I tend to replicate or re-run the analysis with small 
 alterations. This is a place to organise those notes. 
 </description>
+    <image>
+      <title>The Scrapbook</title>
+      <url>http://eliocamp.github.io/scrapbook/img/favicon.png</url>
+      <link>http://eliocamp.github.io/scrapbook</link>
+    </image>
     <generator>Distill</generator>
     <lastBuildDate>Wed, 15 Jan 2020 00:00:00 +0000</lastBuildDate>
     <item>
