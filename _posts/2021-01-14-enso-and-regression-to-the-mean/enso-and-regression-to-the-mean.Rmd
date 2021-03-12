@@ -203,3 +203,17 @@ The previous analysis puts the strength of @cai2020b evidence into perspective. 
 These strong negative correlation can be explained by regression towards the mean and reduced ensemble spread in the final period compared to the initial period. I don't think it is possible to identify the source of the spread reduction. It might be a real response to the forcing scenario or inability of the ensemble to capture all the sources of variability. In particular, all members share the same physics and boundary conditions, therefore I believe it would not be unexpected if all members slowly converged to a similar state. @kay2015's Figure 2 does appear to show that the ensemble spread is slightly higher before 1970. Of note, recently @bengtsson2019 observed secular reductions of ensemble spread in mean surface temperature in an ensemble whose members where also all forced with the same radiative conditions. 
 
 Failing to account for regression to the mean is a fallacy that affects many fields of science -- including behavioural science [@kelly2005] and medicine [@chuang-stein1997] -- and features prominently in popular culture, such as the "Sports Illustrated cover jinx" -- the perception that an athlete's performance will be "cursed" after appearing in the cover of Sports Illustrated [@goldacre2008]. @cai2020b is not the first paper nor will be the last to fall for it. 
+
+
+# Download code 
+
+Click on this button to get the code that generated this document:
+
+```{r}
+dir <- dirname(knitr::current_input(TRUE))
+
+downloadthis::download_dir(dir,
+                           output_name = basename(dir),
+                           button_label = "Download code",
+                           self_contained = FALSE)
+```

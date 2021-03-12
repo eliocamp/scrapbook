@@ -21,9 +21,10 @@ compare_updates_url: https://github.com/eliocamp/scrapbook/blob/main/_posts/2021
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE,
+knitr::opts_chunk$set(echo = TRUE, 
                       code_folding = TRUE)
 ```
+
 
 
 Some time ago, with a Journal Club I'm part of (shout-out to Go stratospheric!), we read "Representation of the equatorial stratopause semiannual oscillation in global atmospheric reanalyses" [@kawatani2020], a paper about the Semiannual Oscillation (SAO). One figure (Figure \@ref(fig:fig8)) piqued our interest. The SAO is supposed to be a characteristic of the tropical stratosphere and be... you know... semiannual. But in Figure \@ref(fig:fig8), the more sticking feature is extra-tropical and with an annual cycle. 
@@ -31,7 +32,7 @@ Some time ago, with a Journal Club I'm part of (shout-out to Go stratospheric!),
 (ref:fig8-cap) Figure 8 from @kawatani2020: "Time–latitude sections of climatological mean annual cycle of the zonal mean zonal wind for (a) SABER, (b) MLS, and (c–i) each reanalysis at 1 hPa. The contour intervals are 10 m s−1. Climatology is calculated from 1980 to 2010 in the reanalyses, from 2002 to 2016 in SABER, and from 2005 to 2016 in MLS."
 
 ```{r fig8, fig.cap  = "(ref:fig8-cap)", out.extra="class=external"}
-knitr::include_graphics(here::here("img", "sao-jet-fig8.png"))
+knitr::include_graphics(file.path("img", "sao-jet-fig8.png"))
 ```
 
 
@@ -161,3 +162,17 @@ filtered %>%
 
 
 So the conclusion, I think, is that the meridional structure was a function of the polar jets, and that looking at the SAO by looking at zonal mean zonal wind in the equator is fine.
+
+
+# Download code 
+
+Click on this button to get the code that generated this document:
+
+```{r}
+dir <- dirname(knitr::current_input(TRUE))
+
+downloadthis::download_dir(dir,
+                           output_name = basename(dir),
+                           button_label = "Download code",
+                           self_contained = FALSE)
+```
