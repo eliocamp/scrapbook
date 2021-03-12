@@ -20,7 +20,10 @@ compare_updates_url: https://github.com/eliocamp/scrapbook/blob/main/_posts/2021
 
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE, cache = TRUE, 
+file <- tools::file_path_sans_ext(knitr::current_input())
+knitr::opts_chunk$set(echo = TRUE, 
+                      cache = TRUE, 
+                      cache.path = file.path("..", "cache", file, "/"),
                       code_folding = TRUE,
                       layout = "l-page")
 knitr::knit_hooks$set(crop = knitr::hook_pdfcrop)
@@ -33,7 +36,7 @@ This are some quick notes on [Global wave number-4 pattern in the southern subtr
 (ref:fig1-cap) Panel a from  @senapati2021's Figure 1: Spatial pattern of second leading EOF mode of SST anomaly over the region (20°S-55°S) from HadISST.
 
 ```{r fig1, echo=FALSE, fig.cap="(ref:fig1-cap)",  out.extra="class=external"}
-knitr::include_graphics(here::here("img", "wave4-fig1.png"))
+knitr::include_graphics(file.path("img", "wave4-fig1.png"))
 ```
 
 First things first. Download the data and try to reproduce their figure. 
@@ -327,3 +330,17 @@ Figure \@ref(fig:cor-pairwise) shows the pairwise correlation between all indice
 
 `r emo::ji("shrug")`. Take it as you will. From what I've seen here, I remain unconvinced that this is a global pattern of SST. 
 
+
+
+# Download code 
+
+Click on this button to get the code that generated this document:
+
+```{r echo=FALSE}
+dir <- dirname(knitr::current_input(TRUE))
+
+downloadthis::download_dir(dir,
+                           output_name = basename(dir),
+                           button_label = "Download code",
+                           button_type = "primary")
+```

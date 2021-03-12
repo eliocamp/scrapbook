@@ -209,11 +209,11 @@ Failing to account for regression to the mean is a fallacy that affects many fie
 
 Click on this button to get the code that generated this document:
 
-```{r}
+```{r echo=FALSE}
 dir <- dirname(knitr::current_input(TRUE))
 
 downloadthis::download_dir(dir,
                            output_name = basename(dir),
                            button_label = "Download code",
-                           self_contained = FALSE)
+                           button_type = "primary")
 ```

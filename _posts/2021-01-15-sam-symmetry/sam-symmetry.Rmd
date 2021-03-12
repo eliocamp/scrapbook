@@ -20,7 +20,9 @@ compare_updates_url: https://github.com/eliocamp/scrapbook/blob/main/_posts/2021
 ---
 
 ```{r setup, include=FALSE}
+file <- tools::file_path_sans_ext(knitr::current_input())
 knitr::opts_chunk$set(echo = TRUE, 
+                      cache.path = file.path("..", "cache", file, "/"),
                       code_folding = TRUE)
 ```
 
@@ -41,7 +43,7 @@ CKV ran an aquaplanet model and they point out that the first EOF of sea level p
 
 
 ```{r ckv-slp, fig.cap = "(ref:ckv-slp-cap)", out.extra="class=external", echo = FALSE}
-knitr::include_graphics(here::here("img", "ckv-sam-aqua.png"))
+knitr::include_graphics(file.path("img", "ckv-sam-aqua.png"))
 ```
 
 The problem is that when the look at particular events of high / low values of EOF1, they are nowhere near "annular".
@@ -50,7 +52,7 @@ The problem is that when the look at particular events of high / low values of E
 (ref:ckv-events-cap) Excerpt from Figure 7 from @cash2002: High- and low-index annular-mode events. (a), (b), (c) High-index events. (d), (e), (f ) Low-index events. Events displayed are 3-day averages about the day that the projection coefficient attains its maximum value during the event. Solid contours are positive, dashed contours are negative, and a heavy contour denotes the zero line. Contour interval is 5 mb
 
 ```{r ckv-events, fig.cap = "(ref:ckv-events-cap)", out.extra="class=external", echo = FALSE}
-knitr::include_graphics(here::here("img", "ckv-sam-cases.png"))
+knitr::include_graphics(file.path("img", "ckv-sam-cases.png"))
 ```
 
 Inspired by this disconnect between the structure of the EOF and the individual cases, they try a different approach. They go back to using teleconnection maps (correlation between SLP at one point and the rest of the globe) based on various latitudes. They conclude that negative correlations are maximised for points at 65º and 35º (Figure \@ref(fig:ckv-events))
@@ -58,7 +60,7 @@ Inspired by this disconnect between the structure of the EOF and the individual 
 (ref:ckv-correlation-cap) Excerpt or FIgure 9 from @cash2002: One-point correlation maps for surface pressure. (a) Base point at 358, (b) base point at 658, (c) base point at 508, and (d) base point at Pole. Solid contours are positive, dashed contours are negative, and a heavy contour denotes the zero line. Contour interval is 0.1. Correlation maps are averages taken over all longitudes, for a given latitude, where base points have been rotated to coincide.
 
 ```{r ckv-correlation, fig.cap = "SLP de casos seleccionados con eventos positivos (izquierda) y negativos (derecha)", out.extra="class=external", echo = FALSE}
-knitr::include_graphics(here::here("img", "ckv-sam-teleconnection.png"))
+knitr::include_graphics(file.path("img", "ckv-sam-teleconnection.png"))
 ```
 
 These maps look like "zonally localised versions" of the global annular mode. From this (and other results), CKV conclude that
@@ -89,14 +91,14 @@ map <- ggplot2::map_data("world2") %>%
 
 quick_map <- list(geom_polygon(data = map,
                                aes(long, lat, group = group), fill = NA, color = "black",
-                               size =0.2),
+                               size = 0.2),
                   scale_x_longitude(),
                   scale_y_latitude())
 ```
 
 
 ```{r download-data}
-# This WILL take long. Go make yourself a cut of tea or brew some mate.
+# This WILL take long. Go make yourself a cup of tea or brew some mate.
 era5_file <- here::here("_data", "era5-hgt.nc")
 
 if (!file.exists(era5_file)) {
@@ -378,3 +380,17 @@ Comparing Figure \@ref(fig:paiwise-cor-sim) with Figure \@ref(fig:paiwise-cor), 
 I think that CKV does bring up an important point. The fact that one can compute a global EOF doesn't mean that the observed pattern is indeed global. EOF is a statistical method not constrained by physics and as the simulated data shows, you can very well obtain an annular mode with data that doesn't vary annularly. 
 
 However, in the real atmosphere, the Southern Annular Mode does appear as a globally coherent annular mode. The SAM is safe. 
+
+
+# Download code 
+
+Click on this button to get the code that generated this document:
+
+```{r echo=FALSE}
+dir <- dirname(knitr::current_input(TRUE))
+
+downloadthis::download_dir(dir,
+                           output_name = basename(dir),
+                           button_label = "Download code",
+                           button_type = "primary")
+```
