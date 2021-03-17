@@ -209,10 +209,16 @@ Failing to account for regression to the mean is a fallacy that affects many fie
 
 Click on this button to get the code that generated this document:
 
-```{r echo=FALSE}
-dir <- dirname(knitr::current_input(TRUE))
 
-downloadthis::download_dir(dir,
+```{r echo=FALSE, layout = "l-body"}
+dir <- dirname(knitr::current_input(TRUE))
+zipfile <- file.path(tempdir(), paste0(basename(dir), ".zip"))
+
+zip(zipfile, 
+    files = c(knitr::current_input(),
+              "bibliography.bib"))
+
+downloadthis::download_file(zipfile,
                            output_name = basename(dir),
                            button_label = "Download code",
                            button_type = "primary")

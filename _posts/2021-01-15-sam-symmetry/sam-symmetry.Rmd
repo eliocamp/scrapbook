@@ -386,10 +386,17 @@ However, in the real atmosphere, the Southern Annular Mode does appear as a glob
 
 Click on this button to get the code that generated this document:
 
-```{r echo=FALSE}
+```{r echo=FALSE, layout = "l-body"}
 dir <- dirname(knitr::current_input(TRUE))
+img <- file.path("img", list.files(file.path(dir, "img")))
+zipfile <- file.path(tempdir(), paste0(basename(dir), ".zip"))
 
-downloadthis::download_dir(dir,
+zip(zipfile, 
+    files = c(knitr::current_input(),
+              img, 
+              "bibliography.bib"))
+
+downloadthis::download_file(zipfile,
                            output_name = basename(dir),
                            button_label = "Download code",
                            button_type = "primary")
