@@ -18,12 +18,12 @@ bibliography: bibliography.bib
 compare_updates_url: https://github.com/eliocamp/scrapbook/blob/main/_posts/2021-01-14-wave4/wave4.Rmd
 ---
 
-
 ```{r setup, include=FALSE}
 file <- tools::file_path_sans_ext(knitr::current_input())
 knitr::opts_chunk$set(echo = TRUE, 
                       cache = TRUE, 
                       cache.path = file.path("..", "cache", file, "/"),
+                      fig.path = file.path("figs/"),
                       code_folding = TRUE,
                       layout = "l-page")
 knitr::knit_hooks$set(crop = knitr::hook_pdfcrop)
@@ -33,7 +33,7 @@ knitr::knit_hooks$set(crop = knitr::hook_pdfcrop)
 
 This are some quick notes on [Global wave number-4 pattern in the southern subtropical sea surface temperature](https://www.nature.com/articles/s41598-020-80492-x) [@senapati2021]. The article claims to discover a wave-4 pattern in the southern Sea Surface Temperature (SST). Their basic method is to perform Empirical Orthogonal Function (EOF) to SST between 55°S and 20°S. They discard the first EOF as uninteresting because it's "ENSO-like" (unsurprising) and focus on the second EOF, whose spatial pattern is in Figure \@ref(fig:fig1).
 
-(ref:fig1-cap) Panel a from  @senapati2021's Figure 1: Spatial pattern of second leading EOF mode of SST anomaly over the region (20°S-55°S) from HadISST.
+(ref:fig1-cap) Panel a from  @senapati2021's Figure 1: Spatial pattern of second leading EOF mode of SST anomaly over the region (20°S-55°S) from HadSST.
 
 ```{r fig1, echo=FALSE, fig.cap="(ref:fig1-cap)",  out.extra="class=external"}
 knitr::include_graphics(file.path("img", "wave4-fig1.png"))
@@ -237,7 +237,7 @@ series <- eofs$right %>% copy() %>%
 ```{r indices, fig.cap = "Relationship between the Pacific index and Atlantic-Indian index.", layout= "l-body"}
 # Relationship between the two indices. 
 series %>% 
-  dcast(time ~ basin) %>% 
+  dcast(time ~ basin, value.var = "V1") %>% 
   ggplot(aes(pacific, atlantic)) +
   geom_point() +
   geom_label(data = ~.x[, .(cor(pacific, atlantic))], 
@@ -336,10 +336,16 @@ Figure \@ref(fig:cor-pairwise) shows the pairwise correlation between all indice
 
 Click on this button to get the code that generated this document:
 
-```{r echo=FALSE}
+```{r echo=FALSE, layout = "l-body"}
 dir <- dirname(knitr::current_input(TRUE))
+img <- file.path("img", list.files(file.path(dir, "img")))
+zipfile <- file.path(tempdir(), paste0(basename(dir), ".zip"))
 
-downloadthis::download_dir(dir,
+zip(zipfile, 
+    files = c(knitr::current_input(),
+              img))
+
+downloadthis::download_file(zipfile,
                            output_name = basename(dir),
                            button_label = "Download code",
                            button_type = "primary")
