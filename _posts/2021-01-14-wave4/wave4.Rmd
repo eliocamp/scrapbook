@@ -21,9 +21,8 @@ compare_updates_url: https://github.com/eliocamp/scrapbook/blob/main/_posts/2021
 ```{r setup, include=FALSE}
 file <- tools::file_path_sans_ext(knitr::current_input())
 knitr::opts_chunk$set(echo = TRUE, 
-                      cache = TRUE, 
+                      cache = FALSE, 
                       cache.path = file.path("..", "cache", file, "/"),
-                      fig.path = file.path("figs/"),
                       code_folding = TRUE,
                       layout = "l-page")
 knitr::knit_hooks$set(crop = knitr::hook_pdfcrop)
@@ -113,6 +112,7 @@ ggplot(eofs$right, aes(lon, lat)) +
   scale_fill_divergent(guide = "none") +
   quick_map + 
   facet_wrap(PC~., ncol = 1)
+
 ```
 
 And indeed. The first EOF is kind of ENSO-like (not really full ENSO, because I'm missing the equatorial SSTs, which is where ENSO really shines) and the second EOF looks pretty much identical to the their Figure 1.a save the different prime meridian. The time series associated with the second EOF is also almost exactly the same. 
@@ -131,6 +131,7 @@ cut(eofs, 2) %>%
   
   scale_y_continuous(NULL) +
   scale_x_datetime(date_breaks = "5 years", date_labels = "%Y")
+
 ```
 OK, I'm on the right track. 
 
@@ -185,7 +186,7 @@ corrs <- sst[points, on = .NATURAL] %>%
 ```
 
 
-(ref:correlations-cap) Correlation maps of SST and SST with the first EOF filterred out with the corresponding SST at each one of the points of interest. Compare with[Figure 2](https://www.nature.com/articles/s41598-020-80492-x/figures/2) of @senapati2021.
+(ref:correlations-cap) Correlation maps of SST and SST with the first EOF filterred out with the corresponding SST at each one of the points of interest. Compare with [Figure 2](https://www.nature.com/articles/s41598-020-80492-x/figures/2) of @senapati2021. The sign of the correlation is flipped for the even points as to preserve always the same sign and allow for easier comparison among maps.
 
 ```{r correlations, fig.cap = "(ref:correlations-cap)"}
 corrs %>% 
@@ -199,8 +200,10 @@ corrs %>%
   scale_fill_divergent() +
   facet_grid(id~variable, labeller = labeller(variable = c(correlation = "SST", 
                                                            correlation_reconstructed = "SST - EOF1")))
+
 ```
-I purposedly computed the two versions. The panels on the right should be a reproduction of @senapati2021's Figure 2. It's hard to compare them because of the different colour palettes and scale limits (the authors really chose the parameters that enhanced small correlations), but I personally don't see much coherency. The first three rows do show high correlations between the three points in the Pacific, which in the unfiltered data looks very much like the well-known PSA pattern that appears as a response to El Niño Southern Oscillation. 
+
+I purposely computed the two versions. The panels on the right should be a reproduction of @senapati2021's Figure 2. It's hard to compare them because of the different colour palettes and scale limits (the authors chose parameters that enhanced small correlations), but I personally don't see much coherency. The first three rows do show high correlations between the three points in the Pacific, which in the unfiltered data looks very much like the well-known PSA pattern that appears as a response to El Niño Southern Oscillation. 
 
 Another way to look at it is with by plotting $r^2$ which directly quantifies the degree of (linear) dependence between points. 
 
@@ -217,9 +220,51 @@ corrs %>%
   scale_fill_viridis_c(oob = scales::squish,
                        super = ScaleDiscretised) +
   facet_grid(id~.)
+
 ```
 
 Again, aside from the points in the Pacific, there is not a lot of long-range relationships between points. As I see it, I strongly suspect that this PC2 pattern is not really robustly **global**.
+
+
+```{r bootstrap, cache=TRUE}
+set.seed(42)
+N <- 500
+random_points <- unique(corrs[, .(lon, lat)]) %>% 
+  .[sample(.N, N), ] %>% 
+  setkey(lon, lat)
+
+random_cors <- vapply(seq_len(N), function(i) {
+  r <- random_points[i, ] 
+  ref <- sst[lat == r$lat & lon == r$lon, sst - sst_reconstructed]
+  sst[, ref_data := ..ref, by = .(lon, lat)]
+  sst[, .(cor(sst - sst_reconstructed, ref_data)), by = .(lon, lat)] %>% 
+    .[, min(V1)]
+}, numeric(1))
+```
+
+
+Ok, but how could I quantify this vague impression that these maps don't show a lot of long-range teleconnections? What I'm going to do is to compute `r N` correlation maps like Figure \@ref(fig:correlations) but using random points. For each map, I'll take the absolute value of the minimum (negative) correlation as the level of connectivity. 
+
+(ref:correlation-random-cap) Same as Figure \@ref(fig:correlations) but only for the reconstructed SST. Added in black contours, the 0.5 quantile of random correlations derived from `r N` correlation maps with random points. 
+
+```{r correlation-random,fig.cap = "(ref:correlation-random-cap)"}
+corrs %>% 
+  ggplot(aes(lon, lat)) +
+  geom_contour_fill(aes(z = -correlation_reconstructed*sign), 
+                    breaks = AnchorBreaks(anchor = 0, binwidth = 0.1)) +
+  geom_contour2(aes(z = abs(correlation)), breaks = quantile(abs(random_cors), .5), size = 0.25) +
+  quick_map +
+  geom_point(data = copy(points)[, id := NULL], shape = 21, fill = NA) +
+  geom_point(data = copy(points), shape = 21, color = "black", fill =  "#0e9a83") +
+  scale_fill_divergent() +
+  facet_grid(id~., labeller = labeller(variable = c(correlation = "SST", 
+                                                           correlation_reconstructed = "SST - EOF1")))
+```
+
+
+
+Figure \@ref(fig:correlation-random) repeats Figure \@ref(fig:correlations) but it marks the 50th percentile of the minimum correlation values derived from the bootstrap procedure, which is `r signif(quantile(abs(random_cors), 0.5), 2)`. 95% of random points had minimum correlations with absolute values larger than `r signif(quantile(abs(random_cors), 0.95), 2)`. With this in mind, correlations of the order of $\pm `r signif(quantile(abs(random_cors), 0.5), 2)`$ are not surprising and what would be expected by chance alone. This, of course, is only a crude measure since it doesn't take into account the size or pattern of the correlations, but I think that it should give some perspective to the real significance to the correlation levels shown here.
+
 
 Let's try something else. From the correlation maps above (and previous knowledge), it's pretty obvious that the Pacific sector does behave somewhat coherently. So what I'm going to do is to split the spatial pattern into the Pacific basin (between 150°E and 290°E) and the Atlantic-Indian basins (the rest of the hemisphere). Then, I'm going to project each pattern onto the corresponding SST fields to get two indices. If the patterns is really coherent in time, then both indices must be strongly correlated. 
 
@@ -246,11 +291,13 @@ series %>%
   geom_smooth(method = "lm") +
   scale_x_continuous("Pacific index") +
   scale_y_continuous("Atlantic-Indian index")
+
 ```
 
 I mean... A correlation of 0.44 is not nothing, but it's also not a lot. 
 
-Let's do the correlation map of each index. Again, if the pattern is really global, then the correlation map of the Pacific Index should also show the Atlantic-Indian pattern and vice versa.
+Let's do the correlation map of each index. Again, if the pattern is really global, then the correlation map of the Pacific Index should also show th
+.e Atlantic-Indian pattern and vice versa.
 
 
 ```{r patterns}
@@ -275,10 +322,10 @@ patterns %>%
   scale_fill_divergent_discretised(limits = c(-1, 1)) +
   facet_wrap(basin~., ncol = 1, labeller = labeller(basi = c(pacific = "Pacific", 
                                                              atlantic = "Atlantic-Indian")))
+
 ```
 
 Again... kinda? For the Atlantic-Indian index, the Pacific signal is barely there and it's actually completely missing in the Western Pacific. And for the Pacific index, the there is *some* signal in the Indian ocean, but barely any signal in the Atlantic.
-
 
 Now one last test. To extend this analysis, I'll do the same computation but for every longitude. That is, for each longitude, take a 140º wide section of SST centred in that longitude and project the corresponding wave-4 pattern onto it to get a time-varying index. The result, then, is one "local wave-4 index" for each longitude. 
 
@@ -309,6 +356,29 @@ lon_eofs <- lapply(unique(sst$lon), function(base_lon) {
 ```
 
 
+```{r sections}
+k <- lon_eofs %>% 
+  widyr::pairwise_cor(base_lon, time, eof) %>% 
+  as.data.table() %>% 
+  .[, correlation := 1 - abs(correlation)] %>% 
+  dcast(item1 ~ item2, value.var = "correlation") %>% 
+  .[, -1] %>% 
+  as.dist() %>% 
+  hclust() %>% 
+  cutree(3)
+
+sections <- data.table(lon = as.numeric(names(k)), k = k)
+cuts <- sections[c(0, diff(k)) != 0]
+
+label_k <- c("1" = "East Pacific & Atlantic", 
+             "2" = "Indian",
+             "3" = "West Pacific")
+
+
+cuts_lon <- LonLabel(cuts$lon)
+cuts_lon_round <- LonLabel(round(cuts$lon/5)*5)
+```
+
 ```{r cor-pairwise, fig.cap = "Pairwise correlation of \"local wave-4\" indices.", layout = "l-body"}
 lon_eofs %>% 
   widyr::pairwise_cor(base_lon, time, eof) %>% 
@@ -323,10 +393,45 @@ lon_eofs %>%
   scale_x_longitude() +
   scale_y_longitude() +
   coord_equal() 
+
 ```
 
 Figure \@ref(fig:cor-pairwise) shows the pairwise correlation between all indices. Correlation drop rapidly with distance, but there are three clearly defined regions of high correlation that could represent various teleconnected areas. Perhaps not coincidentally, they correspond approximately to the three oceanic basins. The Indian between 0º and 120ºE, Western Pacific between 120ºE and 120ºW and Eastern Pacific and Atlantic between 120ºW and 0º.
 
+
+Based on these correlations, we use hierarchical clustering with `1 - abs(correlation)` as distance measure to classify each longitude into each of 3 groups. The clusters are flanked by the longitudes `r knitr::combine_words(cuts_lon)`, which agree well with the visual interpretation of Figure \@ref(fig:cor-pairwise). Using this classification, I now create three indices by again projecting the corresponding wave-4 pattern into SST anomalies.
+
+```{r series_k}
+series_k <- eofs$right %>% copy() %>% 
+  .[PC == "PC2"] %>% 
+  .[sections, on = "lon"] %>% 
+  setnames("sst", "EOF") %>% 
+  .[sst, on = c("lon", "lat")] %>% 
+  .[, .(value = weighted.mean(sst*EOF, cos(lat*pi/180))), by = .(time, k)] %>% 
+  .[, value := as.numeric(scale(value)), by = .(k)]
+```
+
+```{r patterns_k}
+patterns_k <- series_k %>% 
+  .[sst, on = "time", allow.cartesian = TRUE] %>% 
+  .[, .(correlation = cor(value, sst)), by = .(lon, lat, k)] 
+```
+
+(ref:patterns-k2-cap) Correlation maps between SST and each of the three basin-dependend wave-4 index. Overlayed in gray, the tree distinct areas of shared variability identified in Figure \@ref(fig:cor-pairwise) by hierarchical clustering and selecting 3 clusters.
+
+```{r patterns-k2, fig.cap = "(ref:patterns-k2-cap)"}
+patterns_k %>% 
+  ggplot(aes(lon, lat)) +
+  geom_contour_fill(aes(z = -correlation, fill = ..level..), 
+                    breaks = AnchorBreaks(0)) +
+  quick_map + 
+  geom_raster(data = unique(patterns_k[, .(lon, lat)])[sections, on = "lon"],
+              alpha = 0.2) +
+  scale_fill_divergent_discretised("Correlation", limits = c(-1, 1)) +
+  facet_wrap(k~., ncol = 1, labeller = labeller(k = label_k))
+```
+
+Correlation maps between SST anomalies and each of the three indices are shown in Figure \@ref(fig:patterns-k2). Inside the area used to define each index correlation are high and the pattern is well defined, as expected by construction. However, outside those areas, there is very little signal.
 
 `r emo::ji("shrug")`. Take it as you will. From what I've seen here, I remain unconvinced that this is a global pattern of SST. 
 

@@ -1,0 +1,171 @@
+---
+title: ENSO and regression to the mean
+description: |
+  How a recent paper published in Nature was pray to regression to the mean. 
+author:
+  - name: Elio Campitelli
+    url: https://eliocamp.github.io/
+    affiliation: Centro de Investigaciones del Mar y la Atmósfera
+    affiliation_url: http://www.cima.fcen.uba.ar/
+date: "2020-01-15"
+slug: enso-regression-to-mean
+categories:
+  - ENSO
+  - statistics
+output: 
+  distill::distill_article: default
+bibliography: bibliography.bib
+compare_updates_url: https://github.com/eliocamp/scrapbook/blob/main/_posts/2021-01-14-enso-and-regression-to-the-mean/enso-and-regression-to-the-mean.Rmd
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, 
+                      code_folding = TRUE)
+knitr::knit_hooks$set(crop = knitr::hook_pdfcrop)
+```
+
+
+```{r}
+library(data.table)
+library(metR)
+library(ggplot2)
+library(magrittr)
+```
+
+```{r}
+url <- "ftp://ftp2.psl.noaa.gov/Datasets/20thC_ReanV3/Monthlies/2mSI-MO/air.2m.mon.mean.nc"
+
+data_file <- here::here("_data", "20thC_ReanV3-t2m.nc")
+
+if (!file.exists(data_file)) {
+ download.file(url, data_file)
+}
+
+```
+
+```{r}
+t2m <- ReadNetCDF(data_file, vars = c(t = "air"), 
+                  subset = list(lon = c(180, 360), 
+                                lat = c(-60, 70),
+                                time = c("1951-01-01", NA))) %>% 
+  .[, t_a := Anomaly(t), by = .(lon, lat, month(time))] %>% 
+  .[, t_detrended := .lm.fit(cbind(1, as.numeric(time), as.numeric(time)^2), t_a)$residuals,
+    by  = .(lon, lat)]
+
+enso <- rsoi::download_oni(use_cache = TRUE, file = here::here("_data", "enso-lagged-regression.csv")) %>% 
+  as.data.table() %>% 
+  .[, .(time = lubridate::as_datetime(Date), oni = ONI)] %>% 
+  .[time %between% range(t2m$time)] %>% 
+  .[, oni_a := Anomaly(oni, baseline = year(time) %between% c(1951, 2000)), by = month(time)] %>% 
+  .[, oni_detrended := resid(lm(oni ~ poly(time, 2)))] 
+```
+
+```{r}
+with_enso <- t2m[enso, on = "time"]
+
+lag_cor <- function(x, y, lags) {
+  cors <- lapply(lags, function(lag) {
+    x1 <- shift(x, lag)
+    cor.test(x1, y, use = "complete.obs")[c("estimate", "p.value")]
+  }) 
+  
+  list(estimate = vapply(cors, function(x) x$estimate, numeric(1)),
+       p.value =  vapply(cors, function(x) x$p.value, numeric(1)), 
+       lag = lags)
+  
+}
+
+cors <- with_enso[, lag_cor(t_detrended, oni_detrended, lags = -7:7), by = .(lon, lat)]
+```
+
+```{r}
+map <- function(fill = NA, color = "black") {
+  map <- map_data("world2")
+  geom_polygon(data = map, aes(long, lat, group = group), color = color, size = 0.2, 
+            fill = fill)
+}
+```
+
+```{r}
+cors %>% 
+  .[lag != 0] %>% 
+  .[, signif := p.value < 0.05] %>% 
+  .[, any(signif), by = .(lon, lat, sign(lag))] %>% 
+  
+  .[, land := MaskLand(lon, lat)] %>% 
+  .[land == TRUE] %>%
+  .[V1 == TRUE] %>% 
+  ggplot(aes(lon, lat)) +
+  map(fill = "white", color = NA) +
+  geom_raster(fill = "#DF0E19") +
+  map(fill = NA, color = "black") +
+  scale_fill_divergent() +
+  scale_y_latitude() +
+  scale_x_longitude() +
+  facet_wrap(~sign) +
+  coord_quickmap(xlim = c(360-180, 360), ylim = c(-60, 70)) +
+  theme(panel.background = element_rect(fill = "#CCCCCC"), 
+        panel.grid = element_line(colour = "#555761", linetype = 3))
+
+```
+
+
+
+```{r}
+enso[, oni_detrended_residual := c(NA, resid(lm(oni_detrended ~ I(shift(oni_detrended, 1)))))]
+```
+
+```{r}
+ggplot(enso, aes(time)) +
+  geom_line(aes(y = oni_detrended)) +
+  geom_line(aes(y = oni_detrended_residual), color = "red")
+```
+
+```{r}
+with_enso <- t2m[enso, on = "time"]
+cors <- with_enso[, lag_cor(t_detrended, oni_detrended_residual, lags = -7:7), by = .(lon, lat)]
+```
+
+```{r}
+cors %>% 
+  .[lag != 0] %>% 
+  .[, signif := p.value < 0.05] %>% 
+  .[, any(signif), by = .(lon, lat, sign(lag))] %>% 
+  
+  .[, land := MaskLand(lon, lat)] %>% 
+  .[land == TRUE] %>%
+  .[V1 == TRUE] %>% 
+  ggplot(aes(lon, lat)) +
+  map(fill = "white", color = NA) +
+  geom_raster(fill = "#DF0E19") +
+  map(fill = NA, color = "black") +
+  scale_fill_divergent() +
+  scale_y_latitude() +
+  scale_x_longitude() +
+  facet_wrap(~sign) +
+  coord_quickmap(xlim = c(360-180, 360), ylim = c(-60, 70)) +
+  theme(panel.background = element_rect(fill = "#CCCCCC"), 
+        panel.grid = element_line(colour = "#555761", linetype = 3))
+```
+
+
+# Download code 
+
+Click on this button to get the code that generated this document:
+
+
+```{r echo=FALSE, layout = "l-body"}
+dir <- dirname(knitr::current_input(TRUE))
+zipfile <- file.path(tempdir(), paste0(basename(dir), ".zip"))
+
+zip(zipfile, 
+    files = c(knitr::current_input(),
+              "bibliography.bib"))
+
+downloadthis::download_file(zipfile,
+                           output_name = basename(dir),
+                           button_label = "Download code",
+                           button_type = "primary")
+```
+
+
