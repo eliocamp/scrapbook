@@ -7,7 +7,7 @@ author:
     url: https://eliocamp.github.io/
     affiliation: Centro de Investigaciones del Mar y la Atmósfera
     affiliation_url: http://www.cima.fcen.uba.ar/
-date: "2020-01-14"
+date: "2021-01-14"
 slug: wave4
 categories:
   - zonal waves 

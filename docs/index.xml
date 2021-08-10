@@ -13,17 +13,18 @@ alterations. This is a place to organise those notes.
       <link>http://eliocamp.github.io/scrapbook</link>
     </image>
     <generator>Distill</generator>
-    <lastBuildDate>Wed, 15 Jan 2020 00:00:00 +0000</lastBuildDate>
+    <lastBuildDate>Tue, 10 Aug 2021 00:00:00 +0000</lastBuildDate>
     <item>
-      <title>ENSO and regression to the mean</title>
+      <title>Sources and impacts of the zonally asymmetric component of the Southern Annular Mode</title>
       <dc:creator>Elio Campitelli</dc:creator>
-      <link>http://eliocamp.github.io/scrapbook/posts/2021-01-14-enso-and-regression-to-the-mean</link>
-      <description>How a recent paper published in Nature was pray to regression to the mean.</description>
+      <link>http://eliocamp.github.io/scrapbook/posts/2021-08-09-asymsam</link>
+      <description>Explanation of our recent paper on asymmetric and symmetric parts of the Southern Annular Mode.</description>
+      <category>SAM</category>
       <category>ENSO</category>
-      <category>statistics</category>
-      <guid>http://eliocamp.github.io/scrapbook/posts/2021-01-14-enso-and-regression-to-the-mean</guid>
-      <pubDate>Wed, 15 Jan 2020 00:00:00 +0000</pubDate>
-      <media:content url="http://eliocamp.github.io/scrapbook/posts/2021-01-14-enso-and-regression-to-the-mean/distill-preview.png" medium="image" type="image/png" width="1248" height="768"/>
+      <category>general circulation</category>
+      <guid>http://eliocamp.github.io/scrapbook/posts/2021-08-09-asymsam</guid>
+      <pubDate>Tue, 10 Aug 2021 00:00:00 +0000</pubDate>
+      <media:content url="http://eliocamp.github.io/scrapbook/posts/2021-08-09-asymsam/distill-preview.png" medium="image" type="image/png" width="471" height="471"/>
     </item>
     <item>
       <title>Does the Southern Annular Mode exist?</title>
@@ -34,7 +35,7 @@ alterations. This is a place to organise those notes.
       <category>statistics</category>
       <category>general circulation</category>
       <guid>http://eliocamp.github.io/scrapbook/posts/2021-01-15-sam-symmetry</guid>
-      <pubDate>Wed, 15 Jan 2020 00:00:00 +0000</pubDate>
+      <pubDate>Fri, 15 Jan 2021 00:00:00 +0000</pubDate>
       <media:content url="http://eliocamp.github.io/scrapbook/posts/2021-01-15-sam-symmetry/distill-preview.png" medium="image" type="image/png" width="1248" height="768"/>
     </item>
     <item>
@@ -47,8 +48,19 @@ alterations. This is a place to organise those notes.
       <category>tropics</category>
       <category>stratosphere</category>
       <guid>http://eliocamp.github.io/scrapbook/posts/2021-01-15-sao-and-jet</guid>
-      <pubDate>Wed, 15 Jan 2020 00:00:00 +0000</pubDate>
+      <pubDate>Fri, 15 Jan 2021 00:00:00 +0000</pubDate>
       <media:content url="http://eliocamp.github.io/scrapbook/posts/2021-01-15-sao-and-jet/distill-preview.png" medium="image" type="image/png" width="1248" height="768"/>
+    </item>
+    <item>
+      <title>ENSO and regression to the mean</title>
+      <dc:creator>Elio Campitelli</dc:creator>
+      <link>http://eliocamp.github.io/scrapbook/posts/2021-01-14-enso-and-regression-to-the-mean</link>
+      <description>How a recent paper published in Nature was pray to regression to the mean.</description>
+      <category>ENSO</category>
+      <category>statistics</category>
+      <guid>http://eliocamp.github.io/scrapbook/posts/2021-01-14-enso-and-regression-to-the-mean</guid>
+      <pubDate>Thu, 14 Jan 2021 00:00:00 +0000</pubDate>
+      <media:content url="http://eliocamp.github.io/scrapbook/posts/2021-01-14-enso-and-regression-to-the-mean/distill-preview.png" medium="image" type="image/png" width="1248" height="768"/>
     </item>
     <item>
       <title>Analysis of "Global wave number-4 pattern in the southern subtropical sea surface temperature."</title>
@@ -58,7 +70,7 @@ alterations. This is a place to organise those notes.
       <category>zonal waves</category>
       <category>general circulation</category>
       <guid>http://eliocamp.github.io/scrapbook/posts/2021-01-14-wave4</guid>
-      <pubDate>Tue, 14 Jan 2020 00:00:00 +0000</pubDate>
+      <pubDate>Thu, 14 Jan 2021 00:00:00 +0000</pubDate>
       <media:content url="http://eliocamp.github.io/scrapbook/posts/2021-01-14-wave4/distill-preview.png" medium="image" type="image/png" width="960" height="403"/>
     </item>
   </channel>
