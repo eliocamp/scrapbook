@@ -1,0 +1,265 @@
+---
+title: How to measure the wave 3 in the Southern Hemisphere atmosphere
+description: |
+  How to measure a wave that is not just a wave.
+author:
+  - name: Elio Campitelli
+    url: https://eliocamp.github.io/
+    affiliation: Centro de Investigaciones del Mar y la Atmósfera
+    affiliation_url: http://www.cima.fcen.uba.ar/
+date: "2022-06-2"
+slug: goyal-wave3
+categories:
+  - wave 3 
+  - general circulation
+output: 
+  distill::distill_article: default
+bibliography: bibliography.bib
+compare_updates_url: https://github.com/eliocamp/scrapbook/blob/main/_posts/2022-05-31-wave3-goyal/wave3-goyal.Rmd
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(code_folding = FALSE, echo = FALSE)
+knitr::knit_hooks$set(crop = knitr::hook_pdfcrop)
+
+library(metR)
+library(data.table)
+library(ggplot2)
+library(ggperiodic)
+source("helpers.R")
+
+knitr::opts_hooks$set(label = function(options) {
+  if (is.null(options$fig.cap)) {
+    options$fig.cap <- paste0("(ref:", options$label, "-cap)")
+  }
+  options
+})
+
+DT <- `[`
+
+periodic_lon <- function(data) {
+  ggperiodic::periodic(data, lon = c(0, 360)) 
+}
+```
+
+```{r download-data}
+file_vwnd <- here::here("_data/wave3-goyal/era5.vwnd.mean.nc")
+
+if (!file.exists(file_vwnd)) {
+  request_vwnd <- list(
+    format = "netcdf",
+    product_type = "monthly_averaged_reanalysis",
+    variable = c("v_component_of_wind"),
+    pressure_level = c("500"),
+    year = as.character(1979:2020),
+    month = formatC(1:12, width = 2, flag = 0),   # Need all months to compute PSA
+    time = "00:00",
+    grid = c("2.5", "2.5"),
+    area = c(-40, 0, -70, 360),
+    dataset_short_name = "reanalysis-era5-pressure-levels-monthly-means",
+    target = basename(file_vwnd)
+  )
+  
+  ecmwfr::wf_request(request_vwnd, path = dirname(file_vwnd))
+}
+```
+
+My PhD protect is (ostensibly) about the zonal wave 3 (ZW3) in the Southern Hemisphere.
+A zonal wave 3 is a short way of saying that a wave with a wavelenth 1/3rd of the circumference of the Earth at that latitude; which in essense means that on each latitude circle there are 3 maximums and 3 minimums.
+
+So how do you measure the activity of this kind of wave in the atmosphere?
+Traditionally, one would compute the Fourier spectrum of geopotential height (or meridional wind) at some latitude or latitude band and look at the amplitude and phase of the 3rd wavenumber.
+Alternatively, @raphael2004 took the mean value of geopotential anomalies in the climatological location of the three maximums.
+
+Both approaches have the problem that assume that the wave 3 is a perfectly homogeneous wave with constant amplitude and phase in all longitudes.
+@raphael2004's index is even more restrictive.
+Because it's based on fixed locations, it actually measures the amplitude of the wave 3 that is projected into the direction of the climatological wave (this might be an useful concept, though).
+
+However, wave 3 activity is not such a clean wave at all.
+Many studies and simulations show that the atmospheric circulation that is wave 3-like is much more intense over the South Pacific than over the southern Indian Ocean and that the waves don't stick to a constant latitude.  
+
+A [recent paper](https://journals.ametsoc.org/view/journals/clim/aop/JCLI-D-21-0927.1/JCLI-D-21-0927.1.xml) by lead author Rishav Goyal proposes a different approach (which is very similar to my own, which will hopefully be available in a scientific journal near you soon).
+Instead of imposing the shape of the wave 3, @goyal2022 derive the suitable wave 3 pattern from the data using Empirical Orthogonal Functions.
+
+```{r vwnd}
+vwnd <- ReadNetCDF(file_vwnd, 
+                   subset = list(time = c("1979-01-01", "2020-12-01"))) |> 
+  setnames(c("longitude", "latitude"), c("lon", "lat")) |> 
+  DT(, v_a := v - mean(v), by = .(lat, lon, month(time)))
+```
+
+```{r goyal}
+goyal <- vwnd |> 
+  copy() |> 
+  melt(id.vars = c("time", "lat", "lon")) |> 
+  DT(, eof := value*sqrt(cos(lat*pi/180))) |>
+  DT(, .(eof = list(EOF(eof ~ time | lon + lat, n = 1:2, data = .SD, suffix = "EOF"))), by = variable)
+```
+
+```{r ceof}
+ceof <- vwnd |> 
+  copy() |> 
+  DT(, value := spectral::analyticFunction(v_a), by = .(time, lat)) |> 
+  DT(, eof := value*sqrt(cos(lat*pi/180))) |> 
+  EOF(eof ~ time | lon + lat, n = 1, data = _)
+```
+
+(ref:eof-v-cap) First two EOFs of meridional wind between `r knitr::combine_words(LatLabel(range(vwnd$lat)))` (shaded, positive values in red, negative in blue). The pure wave-3 field is shown in thin black contours. In parenthesis, the variance explained by each EOF. Compare with the top panel in Figure 2 of @goyal2022. 
+
+```{r eof-v}
+lab <- goyal[variable == "v_a", eof[[1]]$sdev] |> 
+  DT(, setNames(paste0(EOF, "\n(", scales::percent(r2, 0.1), ")"), EOF))
+
+goyal[variable == "v_a", eof[[1]]$right] |>
+  copy() |> 
+  DT(, wave3 := FilterWave(eof, 3), by = .(lat, EOF)) |> 
+  periodic_lon() |> 
+  ggplot(aes(lon, lat)) +
+  geom_contour_fill(aes(z = eof), breaks = AnchorBreaks(exclude = 0)) +
+  geom_contour_tanaka(aes(z = eof), range = c(0.01, 0.2), 
+                      breaks = AnchorBreaks(exclude = 0)) +
+  geom_contour2(aes(z = wave3, linetype = factor(sign(-..level..))),
+                size = 0.3, alpha = 0.5, 
+                breaks = AnchorBreaks(exclude = 0)) +
+  scale_fill_divergent(guide = "none") +
+  scale_x_longitude(labels = NULL) +
+  scale_y_latitude(labels = NULL) +
+  scale_linetype(guide = "none") +
+  geom_qmap() +
+  geom_coords() +
+  coord_polar2() +
+  facet_wrap(~EOF, labeller = labeller(EOF = lab))
+```
+
+As you can see in Figure \@ref(fig:eof-v), the first two EOFs of meridional wind anomalies are basically a wave 3 pattern but with all the important deviations from a neat homogeneous wave that we want.
+The amplitude is greater in the Pacific Ocean than in the Indian Ocean, the phase changes with latitude and the centres are not exactly where they would be otherwise. 
+This is essentially right, and something that is consistent with previous studies. 
+
+This is not the first time EOF was applied to the wave 3 pattern. 
+@yuan2008 did the same, but importantly, they used only one EOF to characterise the zonal wave 3 when you need two.
+This kind of thing happens all the time in atmospheric sciences.
+Since EOFs can only capture standing oscillations, any pattern that moves needs two or more EOFs to be described.
+
+@goyal2022 does use two of them and furthermore argues that since they are clearly the two orthogonal phases of a wave 3-like pattern, one can combine the time series of each EOF into a single wave-like index
+
+$$
+ZW3 = \sqrt{EOF1^2 + EOF2^2} \cos\left(\tan^{-1} \left ( \frac{EOF2}{EOF1} \right ) \right )
+$$
+
+So, basically, you get the magnitude of the overall activity of the wave 3 as $\sqrt{EOF1^2 + EOF2^2}$ and the phase --the location-- with $\tan^{-1} \left ( \frac{EOF2}{EOF1} \right )$. 
+
+I think this very neat and the way to go. 
+It combines the convenient mathematical formulation of a wave with the flexibility of describing something that is not a pure sine wave. But I think there's a small detail that can be improved upon. 
+
+In theory, one can combine any two random time series that way, but the idea is that this works only if the two series actually represent the two orthogonal phases of a wave-like thing. 
+So the validity of this new index relies heavily on the patterns seen in Figure \@ref(fig:eof-v) being orthogonal. 
+
+They certainly look to be, but in detail, I think that they are not exactly. 
+If one plots the magnitude $\sqrt{EOF1^1 + EOF^2}$ (Figure \@ref(fig:v-amplitude) panel a) it looks like the amplitude changes spatially on a scale similar to the wavelength of the wave, particularly in the Indian sector.
+I think this is not ideal and shows that the patterns obtained with EOF are only approximately suitable for the task.
+The panel b in Figure \@ref(fig:v-amplitude) shows how I think it should look. The amplitude is modulated on a spatial scale larger than the wave itself, creating a smoother field.
+
+(ref:v-amplitude-cap) Panel a: Spatial magnitude of the combined EOF magnitude ($\sqrt{EOF1^2 + EOF2^2}$). Panel b: Spatial magnitude of the complex EOF. 
+
+```{r v-amplitude}
+rbind(
+  ceof$right |> 
+    DT(, .(lon, lat, source = "Complex EOF", eof)),
+  
+  goyal[variable == "v_a", eof[[1]]$right] |>
+    dcast(lon + lat ~ EOF, value.var = "eof") |> 
+    DT(, .(lon, lat, source = "Goyal (2022)", eof = complex(real = EOF1, imaginary = EOF2)))
+) |> 
+  DT(, eof := eof/max(Mod(eof)), by = .(source)) |> 
+  DT(, source := factor(source, levels = c("Goyal (2022)", "Complex EOF"))) |> 
+  periodic_lon() |>  
+  ggplot(aes(lon, lat)) +
+  geom_contour_fill(aes(z = Mod(eof))) +
+  geom_contour_tanaka(aes(z = Mod(eof)),
+                      range = c(0.01, 0.2)) +
+  scale_fill_viridis_c(guide = "none") +
+  scale_x_longitude(labels = NULL) +
+  scale_y_latitude(labels = NULL) +
+  geom_qmap() +
+  geom_coords() +
+  coord_polar2() +
+  facet_wrap(~source) +
+  tagger::tag_facets("panel")
+```
+
+As you might've guessed by the title Figure \@ref(fig:v-amplitude)b, I think a slightly better approach might be to use complex EOF (cEOF). 
+Complex EOFs were first described for the climate sciences by @horel1984 as far as I can tell and are a very good fit for this problem. 
+Instead of relying on chance that the two leading EOFs are orthogonal, one can create EOFs that are orthogonal by construction. 
+
+To do this, one has to move into the complex plane (which is always delight) by computing the analytic function of the variable, which is a complex number in which the real part is the same variable and the imaginary part is the Hilbert transform of the variable. 
+
+To give an idea of what it looks like, Figure \@ref(fig:example) shows a (semi)randomly-selected meridional wind field in shading with it's Hilbert transform in black contours.
+
+```{r max_time}
+max_time <- vwnd[lat == -55] |> 
+  DT(, FitWave(v_a, 3), by = time) |> 
+  DT(which.max(amplitude), time)
+```
+
+(ref:example-cap) Monthly mean meridional wind (shaded, positive values in red, negative in blue) for `r format(max_time, "%B %Y")`. In black contour lines, its Hilbert transform (positive values in solid line, negatives in dashed).
+
+```{r example}
+vwnd[time == max_time] |> 
+  DT(, v_ac := spectral::analyticFunction(v_a), by = lat) |> 
+  periodic_lon() |>  
+  ggplot(aes(lon, lat)) +
+  geom_contour_fill(aes(z = Re(v_ac)), breaks = AnchorBreaks(exclude = 0)) +
+  geom_contour2(aes(z = Im(v_ac), linetype = factor(-sign(..level..))),
+                breaks = AnchorBreaks(exclude = 0)) +
+  scale_fill_divergent(guide = "none") +
+  scale_x_longitude(labels = NULL) +
+  scale_y_latitude(labels = NULL) +
+  scale_linetype(guide = "none") +
+  geom_qmap() +
+  geom_coords() +
+  coord_polar2() 
+```
+
+You can see that the real field has a wave-like structure and that the imaginary field has the same structure but rotated 90º (the maximum amplitude of the imaginary field is exactly in the zeroes of the real field).
+
+And now for the magic reveal, Figure \@ref(fig:ceof-field) shows the real and imaginary parts of the cEOF of meridional wind. 
+
+(ref:ceof-field-cap) Real and imaginary components of the complex EOF of meridional wind between `r knitr::combine_words(LatLabel(range(vwnd$lat)))` (shaded, positive values in red, negatives in blue).
+
+```{r ceof-field}
+ceof$right |> 
+  sep_ReIm() |> 
+  periodic_lon() |> 
+  ggplot(aes(lon, lat)) +
+  geom_contour_fill(aes(z = eof), breaks = AnchorBreaks(exclude = 0)) +
+  geom_contour_tanaka(aes(z = eof), range = c(0.01, 0.2), 
+                      breaks = AnchorBreaks(exclude = 0)) +
+  scale_fill_divergent(guide = "none") +
+  scale_x_longitude(labels = NULL) +
+  scale_y_latitude(labels = NULL) +
+  geom_qmap() +
+  geom_coords() +
+  coord_polar2() +
+  facet_wrap(~part)
+```
+
+They look very similar to @goyal2022's first two EOFs but they are truly orthogonal so there's no ambiguity of whether it makes sense to calculate the amplitude and phase and the magnitude vaires smoothly in space (as seen before in Figure Figure \@ref(fig:v-amplitude) b)
+
+```{r}
+gdata <- rbind(
+  ceof$left |> 
+    DT(, .(time, source = "Complex EOF", eof)),
+  
+  goyal[variable == "v_a", eof[[1]]$left] |>
+    dcast(time ~ EOF, value.var = "eof") |> 
+    DT(, .(time, source = "Goyal (2022)", eof = complex(real = EOF1, imaginary = EOF2)))
+) |> 
+  DT(, mod := Mod(eof)) |> 
+  dcast(time~source, value.var = "mod") 
+
+cor <- gdata[, cor(`Goyal (2022)`, `Complex EOF`)]
+```
+
+Now, to be fair, this is a small detail and the difference is not huge. 
+For instance, the correlation between the amplitude of @goyal2022's index and the equivalent complex index is a whooping `r scales::number(cor, 0.01)`. I think that using one or the other for research will not (should not, at any case) make a lot of difference. 
+
