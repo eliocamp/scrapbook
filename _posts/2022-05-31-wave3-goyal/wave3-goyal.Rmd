@@ -1,5 +1,5 @@
 ---
-title: How to measure the wave 3 in the Southern Hemisphere atmosphere
+title: 'Comment on "A new zonal wave 3 index for the Southern Hemisphere"'
 description: |
   How to measure a wave that is not just a wave.
 author:
