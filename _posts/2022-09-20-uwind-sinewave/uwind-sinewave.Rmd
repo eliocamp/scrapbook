@@ -350,7 +350,7 @@ cors <- models %>%
 cor_text <- paste0(scales::number(cors$estimate, accuracy = 0.01), " (CI: ", paste0(scales::number(cors$conf.int,, accuracy = 0.01), collapse = " -- "), ")")
 ```
 
-As far as the correlation goes, the correlation between the mean zonal wind and the sine amplitude is `r cor_tex`, which is consistent with @Hardiman. 
+As far as the correlation goes, the correlation between the mean zonal wind and the sine amplitude is `r cor_text`, which is consistent with @Hardiman. 
 
 
 

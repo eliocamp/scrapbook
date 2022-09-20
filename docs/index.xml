@@ -13,7 +13,17 @@ alterations. This is a place to organise those notes.
       <link>http://eliocamp.github.io/scrapbook</link>
     </image>
     <generator>Distill</generator>
-    <lastBuildDate>Thu, 02 Jun 2022 00:00:00 +0000</lastBuildDate>
+    <lastBuildDate>Tue, 20 Sep 2022 00:00:00 +0000</lastBuildDate>
+    <item>
+      <title>Mini replication of "Subseasonal Vacillations in the [boreal] Winter Stratosphere"</title>
+      <dc:creator>Elio Campitelli</dc:creator>
+      <link>http://eliocamp.github.io/scrapbook/posts/2022-09-20-uwind-sinewave</link>
+      <description>Fun fitting a sine model</description>
+      <category>stratospheric circulation</category>
+      <guid>http://eliocamp.github.io/scrapbook/posts/2022-09-20-uwind-sinewave</guid>
+      <pubDate>Tue, 20 Sep 2022 00:00:00 +0000</pubDate>
+      <media:content url="http://eliocamp.github.io/scrapbook/posts/2022-09-20-uwind-sinewave/uwind-sinewave_files/figure-html5/timeseries-1.png" medium="image" type="image/png" width="1248" height="768"/>
+    </item>
     <item>
       <title>Comment on "A new zonal wave 3 index for the Southern Hemisphere"</title>
       <dc:creator>Elio Campitelli</dc:creator>
@@ -24,17 +34,6 @@ alterations. This is a place to organise those notes.
       <guid>http://eliocamp.github.io/scrapbook/posts/2022-05-31-wave3-goyal</guid>
       <pubDate>Thu, 02 Jun 2022 00:00:00 +0000</pubDate>
       <media:content url="http://eliocamp.github.io/scrapbook/posts/2022-05-31-wave3-goyal/distill-preview.png" medium="image" type="image/png" width="1248" height="768"/>
-    </item>
-    <item>
-      <title>Some analysis on "Subseasonal Vacillations in the [boreal] Winter Stratosphere"</title>
-      <dc:creator>Elio Campitelli</dc:creator>
-      <link>http://eliocamp.github.io/scrapbook/posts/2022-09-15-uwind-sinewave</link>
-      <description>How to measure a wave that is not just a wave.</description>
-      <category>wave 3</category>
-      <category>general circulation</category>
-      <guid>http://eliocamp.github.io/scrapbook/posts/2022-09-15-uwind-sinewave</guid>
-      <pubDate>Thu, 02 Jun 2022 00:00:00 +0000</pubDate>
-      <media:content url="http://eliocamp.github.io/scrapbook/posts/2022-09-15-uwind-sinewave/uwind-sinewave_files/figure-html5/timeseries-1.png" medium="image" type="image/png" width="1248" height="768"/>
     </item>
     <item>
       <title>Sources and impacts of the zonally asymmetric component of the Southern Annular Mode</title>
