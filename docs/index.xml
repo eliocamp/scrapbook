@@ -13,7 +13,17 @@ alterations. This is a place to organise those notes.
       <link>http://eliocamp.github.io/scrapbook</link>
     </image>
     <generator>Distill</generator>
-    <lastBuildDate>Tue, 20 Sep 2022 00:00:00 +0000</lastBuildDate>
+    <lastBuildDate>Fri, 02 Jun 2023 00:00:00 +0000</lastBuildDate>
+    <item>
+      <title>Stop using composites</title>
+      <dc:creator>Elio Campitelli</dc:creator>
+      <link>http://eliocamp.github.io/scrapbook/posts/2023-06-01-stop-composites</link>
+      <description>Composites are bad. Use regressions instead.</description>
+      <category>statistics</category>
+      <guid>http://eliocamp.github.io/scrapbook/posts/2023-06-01-stop-composites</guid>
+      <pubDate>Fri, 02 Jun 2023 00:00:00 +0000</pubDate>
+      <media:content url="http://eliocamp.github.io/scrapbook/posts/2023-06-01-stop-composites/stop-composites_files/figure-html5/composites1-1.png" medium="image" type="image/png" width="1536" height="864"/>
+    </item>
     <item>
       <title>Mini replication of "Subseasonal Vacillations in the [boreal] Winter Stratosphere"</title>
       <dc:creator>Elio Campitelli</dc:creator>
