@@ -349,7 +349,7 @@ Figure \@ref(fig:piecewise) shows the result of piecewise regression applied to 
 
 (ref:piecewise-cap) Linear regression slopes for positive and negative ONI values using a piecewise linear model with fixed breakpoint at ONI = 0. Crosses indicate raw p-values lower than 0.01 (yep, there's only one).
 
-(ref:piecewise-alt) Maps of the Southern Hemisphere (10ºN to 50ºS) with filled contours. The patterns are similar to Figure 1 but both panels are much more simlar in magnitude and also in shape. 
+(ref:piecewise-alt) Maps of the Southern Hemisphere (10ºN to 50ºS) with filled contours. The patterns are similar to Figure 1 but both panels are much more similar in magnitude and also in shape. There's one lonely ex. 
 
 ```{r piecewise}
 Pvaluate <- function(estimate, std.error, df, adjustment = "none") {
