@@ -33,6 +33,10 @@ knitr::opts_hooks$set(label = function(options) {
   if (is.null(options$fig.cap)) {
     options$fig.cap <- paste0("(ref:", options$label, "-cap)")
   }
+   
+  if (is.null(options$fig.alt)) {
+    options$fig.alt <- paste0("(ref:", options$label, "-alt)")
+  }
   options
 })
 
@@ -86,6 +90,9 @@ It shows composites of wintertime precipitation anomalies for El Niño and La Ni
 
 (ref:composites1-cap) Observed (1979 -- 2019) austral winter composites of precipitation anomalies for La Niña and El Niño winters. 
 
+
+(ref:composites1-alt) Maps of the Southern Hemisphere (10ºN to 50ºS) with filled contours. The top panel, labelled "La Niña", has a band of negative values along the equatorial Pacific and positive values over Papua New Guinea and Indonesia. The bottom panel, labelled "El Niño", has a similar pattern but with the sign reversed and somewhat larger values. 
+
 ```{r composites1, fig.height=4.5}
 enso %>% 
   .[pp, on = "year"] %>% 
@@ -126,12 +133,14 @@ enso %>%
 The original wintertime ONI index has 41 data points (years), but by only selecting years that are larger than 0.5 or lower than -0.5, this throws away more than 2/3 of the data.
 This is terribly data-inefficient. 
 
-The composites of El Niño and La Niña years in Figure \ref(fig:composites1) are based on only 6 and 8 years respectively. 
+The composites of El Niño and La Niña years in Figure \ref(fig:composites1) are based on only 6 years each. 
 This is extremely tiny data, which translates to huge uncertainty in the computed means. 
 To illustrate this, Figure \@ref(fig:confint) plots maps of the lower and upper values for the 95% confidence intervals from a t-test. 
 According to these composites, both El Niño and La Niña are compatible with zero signal in the precipitation in the central Pacific. 
 
 (ref:confint-cap) Lower and upper values for 95% confidence intervals from a t-test comparing the mean precipitation anomaly in El Niño and La Niña years. 
+
+(ref:confint-alt) Maps of the Southern Hemisphere (10ºN to 50ºS) with filled contours. There are four panels arranged in a grid with the columns labelled "Lower" and "Upper" and the rows labelled "La Niña" and "El Niño". The convination of the Lower and Upper bounds indicate that both La Nina and El Niño composites are consistent with zero values almost everywhere. 
 
 ```{r confint, fig.height=2.8, fig.width=8}
 enso %>% 
@@ -156,6 +165,8 @@ Figure \@ref(fig:t-test) shows the result of a t-test on precipitation anomalies
 The differences are barely significant at very few locations and the significance completely vanishes if one controls for multiple comparisons [@walker1914; @wilks2016].
 
 (ref:t-test-cap) Difference between the mean precipitation anomaly in El Niño winters and the negative precipitation anomaly in La Niña winters. Crosses indicate raw p-values lower than 0.01. 
+
+(ref:t-test-alt) Map of the Southern Hemisphere (10ºN to 50ºS) with filled contours. There are small positive values in the equatorial Pacific and negative values over Indonesia. There are a handfull of exes in the map, but most of them are outside the "important" regions. 
 
 ```{r t-test, fig.height=2.5}
 enso %>% 
@@ -185,6 +196,8 @@ These composites seem to suggest that precipitation anomalies are actually *more
 
 (ref:threshold-cap) Same as Figure \@ref(fig:composites1) but for El Niño and La Niña defined using a ±0.1 threshold.
 
+(ref:threshold-alt) Maps of the Southern Hemisphere (10ºN to 50ºS) with filled contours. The patterns of contours are similar to the first figure, but this time the values in the La Niña panel are much bigger in magnitude than the values in the El Niño panel.
+
 ```{r threshold, fig.height=4.5}
 enso %>% 
   copy() %>% 
@@ -203,6 +216,7 @@ Changing the threshold to ±0.3, however, now suggests no difference (Fig. \@ref
 
 (ref:threshold3-cap) Same as Figure \@ref(fig:composites1) but for El Niño and La Niña defined using a ±0.3 thershold.
 
+(ref:threshold-03-alt) Maps of the Southern Hemisphere (10ºN to 50ºS) with filled contours. The patterns of contours are similar to the first figure. This time the values for both panels are much lower in general and equal in magnitude between them. 
 
 ```{r threshold-03, fig.height=4.5}
 enso %>% 
@@ -227,6 +241,8 @@ Crucially, it doesn't tell us how much precipitation increases or decreases when
 This is shown in cartoon form in Figure \@ref(fig:sketch-composites). 
 
 (ref:sketch-composites-cap) Sketch showing a hypothetical linear relationship between ONI and precipitation anomalies at some point and the values of the mean precipitation anomalies for year with ONI greater than 0.5 or lower than -0.5.
+
+(ref:sketch-composites-alt) Hand-drawn scatter plot of ONI vs precipitation with the point arranged in a linear relationship with some noise. Vertical bars indicate the -0.5 and 0.5 thresholds. The points in the +0.5 region have larger magnitude than the points in the -0.5 region. Horizontal lines indicate the mean precipitation for each region, with the mean precipitation for the +0.5 region having a larger magnitude than the mean precipitation for the -0.5 region. 
 
 ```{r sketch-composites, out.width=""}
 knitr::include_graphics("img/sketch-composites.jpg", dpi = 72)
@@ -263,6 +279,9 @@ enso_pattern <- enso %>%
 
 (ref:enso-linear-cap) Same as Figure \@ref(fig:composites1) but from synthetic precipitation anomalies that are perfectly linearly related with ONI by construction.
  
+ 
+(ref:enso-linear) Maps of the Southern Hemisphere (10ºN to 50ºS) with filled contours. The patterns are similar to the first figure and the La Niña panel has smaller values in magnitude than the El Niño panel.
+
 ```{r enso-linear, fig.height=4.5}
 enso %>% 
   .[pp, on = c("year")] %>% 
@@ -281,6 +300,8 @@ This problem can be corrected by normalising the composites by the absolute valu
 In this figure, the map show the expected increase or decrease in precipitation due to a unit change in the ONI index in La Niña or El Niño years and suggest that precipitation anomalies are not more sensible to El Niño than La Niña. 
 
 (ref:composites-norm-cap) Same as Figure \@ref(fig:composites1) but the composites are divided by the absolute value of the mean ONI in each phase. 
+
+(ref:composites-norm-alt) Maps of the Southern Hemisphere (10ºN to 50ºS) with filled contours. The patterns are the same as in Figure 1 but the magnitude of the values in the La Niña panel are bigger in magnitude and the other way around for the El Niño panel. The change makes them both equal in magnitude. 
 
 ```{r composites-norm}
 enso %>% 
@@ -328,6 +349,8 @@ Figure \@ref(fig:piecewise) shows the result of piecewise regression applied to 
 
 (ref:piecewise-cap) Linear regression slopes for positive and negative ONI values using a piecewise linear model with fixed breakpoint at ONI = 0. Crosses indicate raw p-values lower than 0.01 (yep, there's only one).
 
+(ref:piecewise-alt) Maps of the Southern Hemisphere (10ºN to 50ºS) with filled contours. The patterns are similar to Figure 1 but both panels are much more simlar in magnitude and also in shape. 
+
 ```{r piecewise}
 Pvaluate <- function(estimate, std.error, df, adjustment = "none") {
   stats::p.adjust(2*stats::pt(abs(estimate)/std.error, df, lower.tail = FALSE), method = adjustment)
@@ -342,6 +365,7 @@ enso %>%
   .[, pval := Pvaluate(estimate, std.error, df), by = .(term)] %>% 
   .[, estimate := c(estimate[term == "El Niño"], -sum(estimate)), by = .(lon, lat)] %>%
   .[] %>% 
+  .[, term := factor(term, levels = c("La Niña", "El Niño"))] %>% 
   ggplot(aes(lon, lat)) +
   geom_contour_fill(aes(z = estimate, fill = after_stat(level)), 
                     breaks = AnchorBreaks(exclude = 0)) +
