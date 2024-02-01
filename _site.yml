@@ -23,7 +23,6 @@ favicon: "img/favicon.png"
 collections:
   posts:
     feed_items_max: false
-    share: [twitter, facebook]
 rss:
   full_content: true
 theme: scrapbook.css  

@@ -508,8 +508,8 @@ d-title {
 </style>
 
 <script src="../../site_libs/jquery-3.6.0/jquery-3.6.0.min.js"></script>
-<link href="../../site_libs/font-awesome-6.4.0/css/all.min.css" rel="stylesheet"/>
-<link href="../../site_libs/font-awesome-6.4.0/css/v4-shims.min.css" rel="stylesheet"/>
+<link href="../../site_libs/font-awesome-6.4.2/css/all.min.css" rel="stylesheet"/>
+<link href="../../site_libs/font-awesome-6.4.2/css/v4-shims.min.css" rel="stylesheet"/>
 <script src="../../site_libs/headroom-0.9.4/headroom.min.js"></script>
 <script src="../../site_libs/autocomplete-0.37.1/autocomplete.min.js"></script>
 <script src="../../site_libs/fuse-6.4.1/fuse.min.js"></script>
@@ -879,9 +879,21 @@ d-article table.gt_table th {
   display: none !important;
 }
 
+hr.section-separator {
+  border: none;
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
+  margin: 0px;
+}
+
+
+d-byline {
+  border-top: none;
+}
+
 d-article {
   padding-top: 2.5rem;
   padding-bottom: 30px;
+  border-top: none;
 }
 
 d-appendix {
@@ -976,6 +988,11 @@ d-article div.sourceCode pre {
 d-article div.sourceCode pre {
   padding-left: 18px;
   font-size: 14px;
+}
+
+/* tweak for Pandoc numbered line within distill */
+d-article pre.numberSource code > span {
+    left: -2em;
 }
 
 d-article pre {
@@ -1737,6 +1754,12 @@ function init_distill() {
   // create d-title
   $('.d-title').changeElementType('d-title');
 
+  // separator
+  var separator = '<hr class="section-separator" style="clear: both"/>';
+  // prepend separator above appendix
+  $('.d-byline').before(separator);
+  $('.d-article').before(separator);
+
   // create d-byline
   var byline = $('<d-byline></d-byline>');
   $('.d-byline').replaceWith(byline);
@@ -1814,8 +1837,9 @@ function init_distill() {
   $('.distill-force-highlighting-css').parent().remove();
 
   // remove empty line numbers inserted by pandoc when using a
-  // custom syntax highlighting theme
-  $('code.sourceCode a:empty').remove();
+  // custom syntax highlighting theme, except when numbering line
+  // in code chunk
+  $('pre:not(.numberLines) code.sourceCode a:empty').remove();
 
   // load distill framework
   load_distill_framework();
@@ -1841,12 +1865,13 @@ function init_distill() {
     // add orcid ids
     $('.authors-affiliations').find('.author').each(function(i, el) {
       var orcid_id = front_matter.authors[i].orcidID;
+      var author_name = front_matter.authors[i].author
       if (orcid_id) {
         var a = $('<a></a>');
         a.attr('href', 'https://orcid.org/' + orcid_id);
         var img = $('<img></img>');
         img.addClass('orcid-id');
-        img.attr('alt', 'ORCID ID');
+        img.attr('alt', author_name ? 'ORCID ID for ' + author_name : 'ORCID ID');
         img.attr('src','data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAA2ZpVFh0WE1MOmNvbS5hZG9iZS54bXAAAAAAADw/eHBhY2tldCBiZWdpbj0i77u/IiBpZD0iVzVNME1wQ2VoaUh6cmVTek5UY3prYzlkIj8+IDx4OnhtcG1ldGEgeG1sbnM6eD0iYWRvYmU6bnM6bWV0YS8iIHg6eG1wdGs9IkFkb2JlIFhNUCBDb3JlIDUuMC1jMDYwIDYxLjEzNDc3NywgMjAxMC8wMi8xMi0xNzozMjowMCAgICAgICAgIj4gPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4gPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9IiIgeG1sbnM6eG1wTU09Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9tbS8iIHhtbG5zOnN0UmVmPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvc1R5cGUvUmVzb3VyY2VSZWYjIiB4bWxuczp4bXA9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC8iIHhtcE1NOk9yaWdpbmFsRG9jdW1lbnRJRD0ieG1wLmRpZDo1N0NEMjA4MDI1MjA2ODExOTk0QzkzNTEzRjZEQTg1NyIgeG1wTU06RG9jdW1lbnRJRD0ieG1wLmRpZDozM0NDOEJGNEZGNTcxMUUxODdBOEVCODg2RjdCQ0QwOSIgeG1wTU06SW5zdGFuY2VJRD0ieG1wLmlpZDozM0NDOEJGM0ZGNTcxMUUxODdBOEVCODg2RjdCQ0QwOSIgeG1wOkNyZWF0b3JUb29sPSJBZG9iZSBQaG90b3Nob3AgQ1M1IE1hY2ludG9zaCI+IDx4bXBNTTpEZXJpdmVkRnJvbSBzdFJlZjppbnN0YW5jZUlEPSJ4bXAuaWlkOkZDN0YxMTc0MDcyMDY4MTE5NUZFRDc5MUM2MUUwNEREIiBzdFJlZjpkb2N1bWVudElEPSJ4bXAuZGlkOjU3Q0QyMDgwMjUyMDY4MTE5OTRDOTM1MTNGNkRBODU3Ii8+IDwvcmRmOkRlc2NyaXB0aW9uPiA8L3JkZjpSREY+IDwveDp4bXBtZXRhPiA8P3hwYWNrZXQgZW5kPSJyIj8+84NovQAAAR1JREFUeNpiZEADy85ZJgCpeCB2QJM6AMQLo4yOL0AWZETSqACk1gOxAQN+cAGIA4EGPQBxmJA0nwdpjjQ8xqArmczw5tMHXAaALDgP1QMxAGqzAAPxQACqh4ER6uf5MBlkm0X4EGayMfMw/Pr7Bd2gRBZogMFBrv01hisv5jLsv9nLAPIOMnjy8RDDyYctyAbFM2EJbRQw+aAWw/LzVgx7b+cwCHKqMhjJFCBLOzAR6+lXX84xnHjYyqAo5IUizkRCwIENQQckGSDGY4TVgAPEaraQr2a4/24bSuoExcJCfAEJihXkWDj3ZAKy9EJGaEo8T0QSxkjSwORsCAuDQCD+QILmD1A9kECEZgxDaEZhICIzGcIyEyOl2RkgwAAhkmC+eAm0TAAAAABJRU5ErkJggg==');
         a.append(img);
         $(this).append(a);
@@ -2438,7 +2463,7 @@ d-appendix d-footnote-list a.footnote-backlink {
   color: var(--hover-color, white);
 }</style>
 <!--/radix_placeholder_distill-->
-  <script src="../../site_libs/header-attrs-2.21.4/header-attrs.js"></script>
+  <script src="../../site_libs/header-attrs-2.25/header-attrs.js"></script>
   <script src="../../site_libs/jquery-3.6.0/jquery-3.6.0.min.js"></script>
   <script src="../../site_libs/popper-2.6.0/popper.min.js"></script>
   <link href="../../site_libs/tippy-6.2.7/tippy.css" rel="stylesheet" />
@@ -2489,6 +2514,7 @@ d-appendix d-footnote-list a.footnote-backlink {
 
 <div class="d-title">
 <h1>Stop using composites</h1>
+
 <!--radix_placeholder_categories-->
 <div class="dt-tags">
   <a href="../../index.html#category:statistics" class="dt-tag">statistics</a>
@@ -2998,9 +3024,9 @@ However, this is an illusion.</p>
 </table>
 </div>
 </div>
-<p>The original wintertime ONI index has 41 data points (years), but by only selecting years that are larger than 0.5 or lower than -0.5, this throws away more than 2/3 of the data.
+<p>The original wintertime ONI index has 41 data points (years), but only selecting years that are larger than 0.5 or lower than -0.5 throws away more than 2/3 of the data.
 This is terribly data-inefficient.</p>
-<p>The composites of El Niño and La Niña years in Figure (fig:composites1) are based on only 6 years each.
+<p>The composites of El Niño and La Niña years in Figure <a href="#fig:composites1">1</a> are based on only 6 years each.
 This is extremely tiny data, which translates to huge uncertainty in the computed means.
 To illustrate this, Figure <a href="#fig:confint">2</a> plots maps of the lower and upper values for the 95% confidence intervals from a t-test.
 According to these composites, both El Niño and La Niña are compatible with zero signal in the precipitation in the central Pacific.</p>
@@ -3014,10 +3040,10 @@ Figure 2: Lower and upper values for 95% confidence intervals from a t-test comp
 </p>
 </div>
 </div>
-<h3 id="non-liner-effects-are-than-linear-effects">Non-liner effects are than linear effects</h3>
+<h3 id="non-linear-effects-are-harder-to-estimate-than-linear-effects">Non-linear effects are harder to estimate than linear effects</h3>
 <p>If these composites have a hard time detecting the (gigantic) zero-order effect of El Niño, even less can they detect any non-linear effects.
 Indeed, the differences between the composites are not statistically significant.</p>
-<p>Figure <a href="#fig:t-test">3</a> shows the result of a t-test on precipitation anomalies during El Niño years and negative precipitation anomalies during La Niña years to test if the effect of El Niño is not statistically significant from the negative effect of La Niña.
+<p>Figure <a href="#fig:t-test">3</a> shows the result of a t-test on precipitation anomalies during El Niño years and negative precipitation anomalies during La Niña years to test if the effect of El Niño is not significantly different from the negative effect of La Niña.
 The differences are barely significant at very few locations and the significance completely vanishes if one controls for multiple comparisons <span class="citation" data-cites="walker1914 wilks2016">(<a href="#ref-walker1914" role="doc-biblioref">Walker 1914</a>; <a href="#ref-wilks2016" role="doc-biblioref">Wilks 2016</a>)</span>.</p>
 
 
@@ -3031,9 +3057,9 @@ Figure 3: Difference between the mean precipitation anomaly in El Niño winters 
 </div>
 <p>This indicates that, using composites, precipitation anomalies during El Niño are almost indistinguishable to precipitation anomalies during La Niña reversed in sign.</p>
 <h3 id="composites-depend-on-an-arbitrarily-chosen-threshold">Composites depend on an arbitrarily-chosen threshold</h3>
-<p>The ±0.5 threshold used to define El Niño and La Niña years is absolutely arbitrary.
+<p>The ±0.5 threshold used to define El Niño and La Niña years is arbitrary.
 There’s no reason to think that the atmosphere cares that much if the ONI is 0.45 vs. 0.55.</p>
-<p>Figure <a href="#fig:threshold">4</a> shows the same composites as Figure <a href="#fig:composites1">1</a> but using ±0.1 to define the phases.
+<p>Figure <a href="#fig:threshold">4</a> shows the same composites as Figure <a href="#fig:composites1">1</a> but using ±0.1 instead of ±0.5 to define the phases.
 These composites seem to suggest that precipitation anomalies are actually <em>more</em> sensitive to La Niña than to El Niño.</p>
 
 
@@ -3052,7 +3078,7 @@ Figure 4: Same as Figure <a href="#fig:composites1">1</a> but for El Niño and L
 <div class="figure" style="text-align: center"><span style="display:block;" id="fig:threshold-03"></span>
 <img src="stop-composites_files/figure-html5/threshold-03-1.png" alt="Maps of the Southern Hemisphere (10ºN to 50ºS) with filled contours. The patterns of contours are similar to the first figure. This time the values for both panels are much lower in general and equal in magnitude between them." width="768" />
 <p class="caption">
-Figure 5: (ref:threshold-03-cap)
+Figure 5: Same as Figure <a href="#fig:composites1">1</a> but for El Niño and La Niña defined using a ±0.3 thershold.
 </p>
 </div>
 </div>
@@ -3568,7 +3594,7 @@ Figure 8: Same as Figure <a href="#fig:composites1">1</a> but the composites are
 </div>
 <h2 id="use-piecewise-regression-instead">Use piecewise regression instead</h2>
 <p>Composites throw away a lot of precious and perfectly good data, can’t actually detect non-linear effects unless they are really strong, and don’t actually show the relationship between the variables. So what’s the alternative?</p>
-<p>The alternative is to compute simple linear regressions or correlations using all the data and don’t bother with trying to find non-linearities in relatively small datasets.
+<p>An alternative is to compute simple linear regressions or correlations using all the data and don’t bother with trying to find non-linearities in relatively small datasets.
 The sooner we accept that in many cases we only (barely) have enough data to estimate first-order effects, the better.</p>
 <p>But if you really want to look for non-linearity, then fit a piecewise regression with the breakpoint at zero.
 This will give you a slope for negative values and a slope for positive values.
@@ -3602,28 +3628,15 @@ Don’t use them.</p>
 <p>In most cases, it’s better to use simple linear regressions (or correlations) to study first-order linear effects, as you probably don’t have enough data to reliably detect non-linearities. I
 If you really want to check for non-linear effects, piecewise regression uses all the data and will even provide statistical significance of the difference.</p>
 <div class="sourceCode" id="cb1"><pre class="sourceCode r distill-force-highlighting-css"><code class="sourceCode r"></code></pre></div>
-<div id="refs" class="references csl-bib-body hanging-indent" role="doc-bibliography">
-<div id="ref-walker1914" class="csl-entry" role="doc-biblioentry">
+<div id="refs" class="references csl-bib-body hanging-indent" role="list">
+<div id="ref-walker1914" class="csl-entry" role="listitem">
 Walker, Sir Gilbert Thomas. 1914. <em>Correlation in <span>Seasonal Variations</span> of <span>Weather</span>, <span>III</span>: <span>On</span> the <span>Criterion</span> for the <span>Reality</span> of <span>Relationships Or Periodicities</span></em>. <span>Meteorological Office</span>.
 </div>
-<div id="ref-wilks2016" class="csl-entry" role="doc-biblioentry">
+<div id="ref-wilks2016" class="csl-entry" role="listitem">
 Wilks, D. S. 2016. <span>“<span>‘<span>The Stippling Shows Statistically Significant Grid Points</span>’</span>: <span>How Research Results</span> Are <span>Routinely Overstated</span> and <span>Overinterpreted</span>, and <span>What</span> to <span>Do</span> about <span>It</span>.”</span> <em>Bulletin of the American Meteorological Society</em> 97 (12): 2263–73. <a href="https://doi.org/10.1175/BAMS-D-15-00267.1">https://doi.org/10.1175/BAMS-D-15-00267.1</a>.
 </div>
 </div>
 <!--radix_placeholder_article_footer-->
-<div class="article-footer">
-  <p class="social_footer">
-    <span class="article-sharing">
-      Share: &nbsp;
-      <a href="https://twitter.com/share?text=Stop%20using%20composites&amp;url=http%3A%2F%2Feliocamp.github.io%2Fscrapbook%2Fposts%2F2023-06-01-stop-composites%2F" aria-label="share on twitter">
-        <i class="fab fa-twitter" aria-hidden="true"></i>
-      </a>
-      <a href="https://www.facebook.com/sharer/sharer.php?s=100&amp;p[url]=http%3A%2F%2Feliocamp.github.io%2Fscrapbook%2Fposts%2F2023-06-01-stop-composites%2F" aria-label="share on facebook">
-        <i class="fab fa-facebook" aria-hidden="true"></i>
-      </a>
-    </span>
-  </p>
-</div>
 <!--/radix_placeholder_article_footer-->
 </div>
 

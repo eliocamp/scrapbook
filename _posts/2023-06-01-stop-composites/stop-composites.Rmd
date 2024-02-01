@@ -130,10 +130,10 @@ enso %>%
   gt(caption = "Number of years in each phase of ENSO")
 ```
 
-The original wintertime ONI index has 41 data points (years), but by only selecting years that are larger than 0.5 or lower than -0.5, this throws away more than 2/3 of the data.
+The original wintertime ONI index has 41 data points (years), but only selecting years that are larger than 0.5 or lower than -0.5 throws away more than 2/3 of the data.
 This is terribly data-inefficient. 
 
-The composites of El Niño and La Niña years in Figure \ref(fig:composites1) are based on only 6 years each. 
+The composites of El Niño and La Niña years in Figure \@ref(fig:composites1) are based on only 6 years each. 
 This is extremely tiny data, which translates to huge uncertainty in the computed means. 
 To illustrate this, Figure \@ref(fig:confint) plots maps of the lower and upper values for the 95% confidence intervals from a t-test. 
 According to these composites, both El Niño and La Niña are compatible with zero signal in the precipitation in the central Pacific. 
@@ -156,12 +156,12 @@ enso %>%
   facet_grid(phase~variable)
 ```
 
-### Non-liner effects are than linear effects
+### Non-linear effects are harder to estimate than linear effects
 
 If these composites have a hard time detecting the (gigantic) zero-order effect of El Niño, even less can they detect any non-linear effects. 
 Indeed, the differences between the composites are not statistically significant. 
 
-Figure \@ref(fig:t-test) shows the result of a t-test on precipitation anomalies during El Niño years and negative precipitation anomalies during La Niña years to test if the effect of El Niño is not statistically significant from the negative effect of La Niña. 
+Figure \@ref(fig:t-test) shows the result of a t-test on precipitation anomalies during El Niño years and negative precipitation anomalies during La Niña years to test if the effect of El Niño is not significantly different from the negative effect of La Niña. 
 The differences are barely significant at very few locations and the significance completely vanishes if one controls for multiple comparisons [@walker1914; @wilks2016].
 
 (ref:t-test-cap) Difference between the mean precipitation anomaly in El Niño winters and the negative precipitation anomaly in La Niña winters. Crosses indicate raw p-values lower than 0.01. 
@@ -188,10 +188,10 @@ This indicates that, using composites, precipitation anomalies during El Niño a
 
 ### Composites depend on an arbitrarily-chosen threshold
 
-The ±0.5 threshold used to define El Niño and La Niña years is absolutely arbitrary. 
+The ±0.5 threshold used to define El Niño and La Niña years is arbitrary. 
 There's no reason to think that the atmosphere cares that much if the ONI is 0.45 vs. 0.55. 
 
-Figure \@ref(fig:threshold) shows the same composites as Figure \@ref(fig:composites1) but using ±0.1 to define the phases. 
+Figure \@ref(fig:threshold) shows the same composites as Figure \@ref(fig:composites1) but using ±0.1 instead of ±0.5 to define the phases. 
 These composites seem to suggest that precipitation anomalies are actually *more* sensitive to La Niña than to El Niño.
 
 (ref:threshold-cap) Same as Figure \@ref(fig:composites1) but for El Niño and La Niña defined using a ±0.1 threshold.
@@ -214,7 +214,7 @@ enso %>%
 
 Changing the threshold to ±0.3, however, now suggests no difference (Fig. \@ref(fig:threshold-03)).
 
-(ref:threshold3-cap) Same as Figure \@ref(fig:composites1) but for El Niño and La Niña defined using a ±0.3 thershold.
+(ref:threshold-03-cap) Same as Figure \@ref(fig:composites1) but for El Niño and La Niña defined using a ±0.3 thershold.
 
 (ref:threshold-03-alt) Maps of the Southern Hemisphere (10ºN to 50ºS) with filled contours. The patterns of contours are similar to the first figure. This time the values for both panels are much lower in general and equal in magnitude between them. 
 
@@ -322,7 +322,7 @@ enso %>%
 
 Composites throw away a lot of precious and perfectly good data, can't actually detect non-linear effects unless they are really strong, and don't actually show the relationship between the variables.  So what's the alternative?
 
-The alternative is to compute simple linear regressions or correlations using all the data and don't bother with trying to find non-linearities in relatively small datasets. 
+An alternative is to compute simple linear regressions or correlations using all the data and don't bother with trying to find non-linearities in relatively small datasets. 
 The sooner we accept that in many cases we only (barely) have enough data to estimate first-order effects, the better. 
 
 But if you really want to look for non-linearity, then fit a piecewise regression with the breakpoint at zero. 
