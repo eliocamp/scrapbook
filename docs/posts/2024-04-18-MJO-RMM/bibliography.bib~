@@ -1,0 +1,71 @@
+@book{walker1914,
+  title = {Correlation in {{Seasonal Variations}} of {{Weather}}, {{III}}: {{On}} the {{Criterion}} for the {{Reality}} of {{Relationships Or Periodicities}}},
+  shorttitle = {Correlation in {{Seasonal Variations}} of {{Weather}}, {{III}}},
+  author = {Walker, Sir Gilbert Thomas},
+  year = {1914},
+  publisher = {{Meteorological Office}},
+  googlebooks = {cuGtuAAACAAJ},
+  langid = {english}
+}
+
+@article{wilks2016,
+  title = {``{{The Stippling Shows Statistically Significant Grid Points}}'': {{How Research Results}} Are {{Routinely Overstated}} and {{Overinterpreted}}, and {{What}} to {{Do}} about {{It}}},
+  shorttitle = {``{{The Stippling Shows Statistically Significant Grid Points}}''},
+  author = {Wilks, D. S.},
+  year = {2016},
+  month = mar,
+  journal = {Bulletin of the American Meteorological Society},
+  volume = {97},
+  number = {12},
+  pages = {2263--2273},
+  issn = {0003-0007},
+  doi = {10.1175/BAMS-D-15-00267.1},
+  urldate = {2019-05-31},
+  abstract = {Special care must be exercised in the interpretation of multiple statistical hypothesis tests\textemdash for example, when each of many tests corresponds to a different location. Correctly interpreting results of multiple simultaneous tests requires a higher standard of evidence than is the case when evaluating results of a single test, and this has been known in the atmospheric sciences literature for more than a century. Even so, the issue continues to be widely ignored, leading routinely to overstatement and overinterpretation of scientific results, to the detriment of the discipline. This paper reviews the history of the multiple-testing issue within the atmospheric sciences literature and illustrates a statistically principled and computationally easy approach to dealing with it\textemdash namely, control of the false discovery rate.},
+  keywords = {\_tablet},
+  file = {/home/elio/Dropbox/Papers/Wilks_2016_“The Stippling Shows Statistically Significant Grid Points”_.pdf}
+}
+
+@article{wheeler2004,
+	title = {An All-Season Real-Time Multivariate MJO Index: Development of an Index for Monitoring and Prediction},
+	author = {Wheeler, Matthew C. and Hendon, Harry H.},
+	year = {2004},
+	month = {08},
+	date = {2004-08},
+	journal = {Monthly Weather Review},
+	pages = {1917--1932},
+	volume = {132},
+	number = {8},
+	doi = {10.1175/1520-0493(2004)132<1917:aarmmi>2.0.co;2},
+	url = {http://dx.doi.org/10.1175/1520-0493(2004)132<1917:AARMMI>2.0.CO;2},
+	langid = {en}
+}
+
+@article{
+  horel1984,
+  title={Complex Principal Component Analysis: Theory and Examples},
+  volume={23},
+  ISSN={1520-0450},
+  url={https://journals.ametsoc.org/view/journals/apme/23/12/1520-0450_1984_023_1660_cpcata_2_0_co_2.xml},
+  DOI={10.1175/1520-0450(1984)023<1660:CPCATA>2.0.CO;2},
+  number={12},
+  journal={Journal of Applied Meteorology and Climatology},
+  publisher={American},
+  author={Horel, J. D.},
+  year={1984},
+  month={Dec},
+pages={1660–1673} }
+
+@article{alvera-azcárate2011,
+	title = {Data Interpolating Empirical Orthogonal Functions (DINEOF): a tool for geophysical data analyses},
+	author = {{ALVERA-AZCÁRATE}, A. and BARTH, A. and SIRJACOBS, D. and LENARTZ, F. and BECKERS, J. M.},
+	year = {2011},
+	month = {03},
+	date = {2011-03-30},
+	journal = {Mediterranean Marine Science},
+	pages = {5},
+	volume = {12},
+	number = {3},
+	doi = {10.12681/mms.64},
+	url = {http://dx.doi.org/10.12681/mms.64}
+}

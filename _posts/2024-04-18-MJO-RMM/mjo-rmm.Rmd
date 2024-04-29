@@ -1,0 +1,719 @@
+---
+title: "An index for the MJO using complex Empirical Orthogonal Functions"
+description: An early exploration of using cEOF to characterise the Maden-Julian Oscillation.
+author:
+  - name: Elio Campitelli
+    url: https://eliocamp.github.io/
+    affiliation: Securing Antarctica’s Environmental Future, Monash University, Australia
+    affiliation_url: https://arcsaef.com/
+date: "2024-04-29"
+slug: mjo-ceof
+categories:
+  - ceof
+  - mjo
+output: 
+  distill::distill_article: 
+    self_contained: FALSE
+    pandoc-args: "--wrap=none"
+bibliography: bibliography.bib
+compare_updates_url: https://github.com/eliocamp/scrapbook/blob/main/_posts/2024-04-18-MJO-RMM/mjo-rmm.Rmd
+link-citations: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(code_folding = FALSE, 
+                      echo = FALSE, 
+                      cache = TRUE, 
+                      cache.extra = 3, 
+                      fig.width = 8,
+                      fig.align = "center")
+knitr::knit_hooks$set(crop = knitr::hook_pdfcrop)
+
+knitr::opts_hooks$set(label = function(options) {
+  if (is.null(options$fig.cap)) {
+    options$fig.cap <- paste0("(ref:", options$label, "-cap)")
+  }
+  
+  if (is.null(options$fig.alt)) {
+    options$fig.alt <- paste0("(ref:", options$label, "-alt)")
+  }
+  options
+})
+
+library(metR)
+library(data.table)
+library(ggplot2)
+library(gggrid)
+
+theme_set(theme_minimal() +
+            theme(panel.background = element_rect(fill = "#fafafa", color = NA),
+                  legend.position = "bottom",
+                  legend.title.position = "top", 
+                  legend.title = element_text(hjust = 0.5),
+                  legend.frame = element_rect(color = "black", linewidth = 0.4),
+                  legend.key.height = unit(0.75, "lines")
+            ))
+wide_legend <- theme(legend.key.width = unit(1, 'null'))
+
+map <- list(
+  scale_x_continuous(name = NULL, expand = c(0, 0)),
+  scale_y_continuous(name = NULL, expand = c(0, 0)),
+  eliotesis::geom_qmap(),
+  coord_sf()
+)
+
+lab_variable <- c(`200` = "U 200 hPa",
+                  `850` = "U 850 hPa",
+                  `olr` = "OLR")
+
+lab_cplx <- c(Real = "0º ",
+              Imaginario = "90º")
+
+grob_spoke <- function(data, coords) {
+  # browser()
+  radius <-  grid::unit(.15, "snpc")
+  
+  outer_circle <-  grid::circleGrob(x = 0,
+                                    y = 0,
+                                    r = radius*1.2)
+  
+  xcentre <- grid::unit(0, "npc") + grid:::grobHeight(outer_circle)/2
+  ycentre <-  grid::unit(0, "npc") + grid:::grobWidth(outer_circle)/2
+  
+  
+  circle <- grid::circleGrob(x = xcentre,
+                             y = ycentre,
+                             r = radius,
+                             gp = grid::gpar(fill = "white",
+                                             alpha = 0.7))
+  # browser()
+  dx <- cos(coords$angle[1]*pi/180)*grid::grobHeight(circle)/2
+  dy <- sin(coords$angle[1]*pi/180)*grid::grobWidth(circle)/2
+  
+  
+  line <- grid::segmentsGrob(x0 = xcentre, y0 = ycentre,
+                             x1 = xcentre + dx,
+                             y1 = ycentre + dy,
+                             gp = grid::gpar(fill = "black"),
+                             arrow = grid::arrow(angle = 13,
+                                                 length =  grid::unit(.15/2, "snpc"),
+                                                 type = "closed")
+  )
+  
+  grid::gTree(children = grid::gList(circle, line))
+  
+  
+}
+
+grob_slice <- function(angle) {
+  force(angle)
+  function(data, coords) {
+    radius <-  grid::unit(.15, "snpc")
+    
+    outer_circle <-  grid::circleGrob(x = 0,
+                                      y = 0,
+                                      r = radius*1.2)
+    
+    xcentre <- grid::unit(0, "npc") + grid:::grobHeight(outer_circle)/2
+    ycentre <-  grid::unit(0, "npc") + grid:::grobWidth(outer_circle)/2
+    
+    
+    circle <- grid::circleGrob(x = xcentre,
+                               y = ycentre,
+                               r = radius,
+                               gp = grid::gpar(fill = "white",
+                                               alpha = 0.7))
+    dx1 <- cos((coords$angle[1] - angle/2)*pi/180)*grid::grobHeight(circle)/2
+    dy1 <- sin((coords$angle[1] - angle/2)*pi/180)*grid::grobWidth(circle)/2
+    
+    dx2 <- cos((coords$angle[1] + angle/2)*pi/180)*grid::grobHeight(circle)/2
+    dy2 <- sin((coords$angle[1] + angle/2)*pi/180)*grid::grobWidth(circle)/2
+    
+    
+    line1 <- grid::segmentsGrob(x0 = xcentre,
+                                y0 = ycentre,
+                                x1 = xcentre + dx1,
+                                y1 = ycentre + dy1,
+                                gp = grid::gpar(fill = "black")
+    )
+    
+    line2 <- grid::segmentsGrob(x0 = xcentre,
+                                y0 = ycentre,
+                                x1 = xcentre + dx2,
+                                y1 = ycentre + dy2,
+                                gp = grid::gpar(fill = "black")
+    )
+    
+    
+    grid::gTree(children = grid::gList(circle, line1, line2))
+    
+  }
+}
+
+```
+
+The Madden-Julian Oscillation is a tropical oscillation located mainly over the Indian and western Pacific oceans.
+It's not a standing oscillation, but instead it's more like a propagating wave of enhanced and reduced convection that moves eastward.
+
+(ref:mjo-drawing-cap) MJO schematic. From <https://www.climate.gov/news-features/blogs/enso/what-mjo-and-why-do-we-care>.
+
+```{r mjo-drawing, out.extra="class=external", layour = "l-body-outset"}
+knitr::include_graphics("img/mjo.png")
+```
+
+Due to its propagating nature, it cannot be reproduced by a single EOF so MJO indices use two EFOs.
+The [Real-time Multivariate MJO (RMM) index](http://www.bom.gov.au/climate/mjo/) is made up of the first leading EOFs of Outgoing Longwave Radiation, 200hPa zonal wind and 850 hPa zonal wind anomalies in the tropics.
+They do some filtering of the time series to remove the seasonal cycle, short-scale fluctuations and the impact of El Niño-Southern Oscillation too.
+
+I think complex Empirical Orthogonal Functions [@horel1984] might be a great fit for this kind of index, because they can naturally represent propagating patterns.
+
+```{r rmm}
+rmm_url <- "http://www.bom.gov.au/clim_data/IDCKGEM000/rmm.74toRealtime.txt"
+rmm_file <- "~/Downloads/rmm.74toRealtime.txt"
+
+if (!file.exists(rmm_file)) {
+  download.file(rmm_url, rmm_file)
+}
+
+rmm <- data.table::fread(rmm_file, skip = 2, 
+                         col.names = c("year", "month", "day", "RMM1", "RMM2", "phase", "amplitude", "origin")
+) |> 
+  _[, time := lubridate::make_datetime(year, month, day)] |> 
+  _[, ":="(year = NULL, month = NULL, day = NULL, origin = NULL)] |> 
+  _[amplitude > 998, `:=`(RMM1 = NA, 
+                          RMM2 = NA, 
+                          amplitude = NA, 
+                          phase = NA)]
+
+```
+
+```{r download_data}
+olr_url <- "https://downloads.psl.noaa.gov/Datasets/cpc_blended_olr-2.5deg/olr.cbo-2.5deg.day.anom.nc"
+olr_file <- "~/Downloads/olr.cbo-2.5deg.day.anom.nc"
+
+url_uwnd <- function(year) {
+  paste0("https://downloads.psl.noaa.gov/Datasets/ncep.reanalysis/Dailies/pressure/uwnd.", year, ".nc")
+}
+
+years <- seq(2024, 2024-30)
+
+path <- "~/Downloads/uwnd"
+dir.create(path, recursive = TRUE, showWarnings = FALSE)
+
+files <- file.path(path, paste0(years, ".nc"))
+urls <- url_uwnd(years)
+
+invisible(curl::multi_download(urls, files, resume = TRUE, progress = FALSE))
+if (!file.exists(olr_file)) {
+  download.file(olr_url, olr_file)
+}
+```
+
+```{r OLR_data}
+OLR <- metR::ReadNetCDF(olr_file, 
+                        subset = list(lat = c(-15, 15))) 
+
+OLR_data <- OLR |>
+  _[, .(olr = mean(olr, na.rm = TRUE)), by = .(time, lon)] |> 
+  _[!is.finite(olr), olr := NA] |> 
+  _[, olr := metR::ImputeEOF(olr ~ lon | time, verbose = FALSE)]  # Need to impute a few missing values 
+```
+
+```{r uwnd}
+uwnd <- lapply(files, function(f) {
+  metR::ReadNetCDF(f, vars = "uwnd",
+                   subset= list(lat = c(-15, 15),
+                                level = list(850, 200))) |> 
+    _[, .(uwnd = mean(uwnd, na.rm = TRUE)), by = .(lon, time, level)]
+}) |> 
+  data.table::rbindlist()
+```
+
+```{r enso}
+enso <- rsoi::download_oni(use_cache = TRUE, file = "enso.csv") |> 
+  as.data.table() |> 
+  _[, .(time = Date, oni = dSST3.4)] |> 
+  na.omit() |> 
+  _[, `:=`(month = month(time), year = year(time))] 
+
+
+enso_daily <- uwnd[, .(time = unique(time))] |> 
+  _[, `:=`(month = month(time), year = year(time))] |> 
+  enso[i = _, on = c("month", "year")] |> 
+  _[, .(time = i.time, oni)]
+```
+
+The methods used to derive the RMM index are listed in @wheeler2004.
+In short they are, for each variable averaged between 15ºS and 15ºN,
+
+1.  remove the annual cycle, estimated as the waves 0 through 3 of daily means,
+2.  remove the linear effect of ENSO using the monthly ONI interpolated to daily values,
+3.  remove the 120 day running mean, and
+4.  normalise by the global standard deviation.
+
+Here I reproduce the method to the best of my ability.
+The only difference is that, due to what data easily available to me, I will be using the `r enso_daily[, year(range(time))] |> paste0(collapse = "--")` period instead of the 1979--2001 to define the annual cycle, remove the (linear) effect of ENSO and compute the EOFs.
+The dataset has a few missing values, which I impute using DINEOF [@alvera-azcárate2011].
+
+```{r ceof}
+combined <- uwnd |> 
+  dcast(lon + time ~ level, value.var = "uwnd") |> 
+  _[OLR_data, on = c("time", "lon")] |> 
+  na.omit() |> 
+  melt(id.vars = c("lon", "time")) |> 
+  _[order(time)] |> 
+  _[, time2 := update(time, year = 2024)] |> 
+  enso_daily[i = _, on= c("time")]
+
+rm(uwnd, OLR, OLR_data)
+
+annual_cycle <- combined |>
+  _[, .(mean = mean(value)), by = .(lon, variable, time2)] |> 
+  _[, mean := FilterWave(mean, 0:3, action = 1), by = .(lon, variable)] 
+
+
+ceof <- combined |>
+  _[!is.na(oni)] |> 
+  _[annual_cycle, on = c("time2", "variable", "lon")] |> 
+  # Remove annual cycle
+  _[, value_a := value - mean] |>    
+  # Remove (linear) influence of ENSO
+  _[, value_a := ResidLm(value_a, oni), by = .(lon, variable, month(time))] |> 
+  # Remove 120 day running mean. 
+  _[order(time)] |> 
+  _[, value_a := value_a - roll::roll_mean(value_a, width = 120), by= .(lon, variable)] |> 
+  _[is.finite(value_a)] |> 
+  _[, .(lon, time, variable, value = value_a)] |> 
+  # Standardise per variable. 
+  _[, value := value/sd(value), by = variable] |>
+  _[, value_c := spectral::analyticFunction(value), by = .(variable, time)] |> 
+  metR::EOF(value_c ~ lon + variable | time, n = 1, data = _) 
+
+
+eof <- combined |>
+  _[!is.na(oni)] |> 
+  _[annual_cycle, on = c("time2", "variable", "lon")] |> 
+  # Remove annual cycle
+  _[, value_a := value - mean] |>    
+  # Remove (linear) influence of ENSO
+  _[, value_a := ResidLm(value_a, oni), by = .(lon, variable, month(time))] |> 
+  # Remove 120 day running mean. 
+  _[order(time)] |> 
+  _[, value_a := value_a - roll::roll_mean(value_a, width = 120), by= .(lon, variable)] |> 
+  _[is.finite(value_a)] |> 
+  _[, .(lon, time, variable, value = value_a)] |> 
+  # Standardise per variable. 
+  _[, value := value/sd(value), by = variable] |>
+  _[, value_c := value] |> 
+  metR::EOF(value_c ~ lon + variable | time, n = 1:2, data = _) 
+
+```
+
+To compute the cEOF, an extra fifth step is to "enrich" the original data by applying the Hilbert transform.
+In the literature they usually apply this step in the time domain: considering the signal as an oscillation in time.
+In this case, because this is a longitudinally-propagating wave, I'm computing this in the zonal domain: considering the signal as an oscillation in space.
+
+The same way that EOFs are only defined up to a change in sign, cEOFs are only defined up to a rotation in the complex plane.
+Any rotation is equally "real" but to make it comparable with the RMM index, I will rotate the leading cEOF so that both indices are maximally correlated.
+To compute the correlation between two bivariate indices I treat them as vectors, and compute their correlation as the mean cosine of the difference between their phases weighted by the product of their amplitudes.
+
+Instead of labelling each component as the "Real" and "Imaginary" part, I use the angle between each and the positive real line.
+So the real part is the 0º phase and the imaginary part is the 90º phase.
+Here, the RMM1 index is aligned with the 0º phase and the RMM2 with the 90º phase.
+
+```{r max_correlation_angle}
+max_correlation_angle <- ceof$right |> 
+  _[rmm, on = "time"] |> 
+  na.omit() |> 
+  _[, optimise(\(a) weighted.mean(cos(Arg(value_c) - atan2(RMM2, RMM1) + a), w = amplitude*Mod(value_c)),
+               interval = c(-pi, pi), maximum = TRUE)$maximum]
+
+ceof$right <- ceof$right[, value_c := eliotesis::rotate(value_c, max_correlation_angle)]
+ceof$left <- ceof$left[, value_c := eliotesis::rotate(value_c, max_correlation_angle)]
+```
+
+```{r correlation}
+correlation <- ceof$right |> 
+  _[rmm, on = "time"] |> 
+  na.omit() |> 
+  _[, weighted.mean(cos(Arg(value_c) - atan2(RMM2, RMM1)), w = amplitude*Mod(value_c))]
+```
+
+The spatial pattern of the cEOF is shown in Figure \@ref(fig:mjo-spatial), in which the map is shown only for reference, the vertical coordinates are arbitrary and the dark band indicates the area in which the variables were averaged.
+
+(ref:mjo-spatial-cap) Spatial patterns of the leading cEOF of OLR, 850 hPa zonal wind and 200 hPa zonal wind anomalies.
+
+```{r mjo-spatial, fig.width=7, fig.height=5}
+
+denormalise(ceof, "left") |> 
+  eliotesis::sep_ReIm() |> 
+  ggperiodic::periodic(lon = c(0, 360)) |> 
+  ggplot(aes(lon, value_c/max(abs(value_c))*35)) + 
+  annotate("rect", xmin = -Inf, xmax = Inf, ymin = -15, ymax = 15,
+           fill = "gray80") +
+  geom_hline(yintercept = 0, colour = "gray20") +
+  geom_line(aes(color = variable)) +
+  scale_color_brewer("Variable", labels = lab_variable, palette = "Dark2", 
+                     limits = c("olr", "200", "850")) +
+  scale_x_longitude() +
+  map + 
+  coord_sf(ylim = c(-40, 40)) +
+  facet_wrap(~part, ncol = 1, labeller = labeller(part = lab_cplx))
+```
+
+Compare this figure with @wheeler2004's Figure 1.
+The MJO in its 0º phase is characterised by increased convection over Indonesia (around 120ºE), which is evident by the OLR minimum, convergence at the lower levels (negative slope in the 850 hPa zonal wind) and divergence at upper levels (positive slope in the 200 hPa zonal wind) and reduced convection in the western Indian ocean and Africa as evidenced by the inverse signal.
+This is equivalent to the phases 4 and 5 in the RMM diagram.
+In its 90º phase, the enhanced convection is over the Indian ocean, with drier conditions east of Indonesia.
+
+The amplitude of the signal, particularly for OLR, is maximum over the Indian ocean and Indonesia, with little to no signal in the eastern Pacific, South America and the Atlantic Ocean (Fig. \@ref(fig:amplitude)).
+
+(ref:amplitude-cap) Amplitude of the OLR component of the cEOF.
+
+```{r amplitude, fig.width=7, fig.height=2}
+denormalise(ceof, "left") |> 
+  # eliotesis::sep_ReIm() |> 
+  _[variable == "olr"] |> 
+  ggperiodic::periodic(lon = c(0, 360)) |> 
+  ggplot(aes(lon, abs(value_c)/max(abs(value_c))*35)) + 
+  annotate("rect", xmin = -Inf, xmax = Inf, ymin = -15, ymax = 15,
+           fill = "gray80") +
+  geom_hline(yintercept = 0, colour = "gray20") +
+  geom_line() +
+  scale_x_longitude() +
+  map + 
+  coord_sf(ylim = c(-40, 40)) 
+```
+
+A buttery smooth and oddly satisfying animation of the evolution of the cEOF shows how the wet and dry sections travel around the tropics (Fig. \@ref(fig:animation)).
+
+(ref:animation-cap) Animation showing all the phases of the cEOF.
+
+```{r animation, animation.hook="gifski", interval = 1/20, fig.width=7, fig.height=2.5}
+angles <- seq(0, 360, length.out = 80)[-1]
+
+for (a in seq_along(angles)) {
+  denormalise(ceof, "left") |> 
+    _[, value_c := eliotesis::rotate(value_c, -angles[a]*pi/180)] |> 
+    ggperiodic::periodic(lon = c(0, 360)) |> 
+    ggplot(aes(lon, Re(value_c)/max(abs(value_c))*35)) + 
+    annotate("rect", xmin = -Inf, xmax = Inf, ymin = -15, ymax = 15,
+             fill = "gray80") +
+    geom_hline(yintercept = 0, colour = "gray20") +
+    geom_line(aes(color = variable)) +
+    scale_color_brewer("Variable", labels = lab_variable, palette = "Dark2", 
+                       limits = c("olr", "200", "850")) +
+    scale_x_longitude() +
+    map + 
+    coord_sf(ylim = c(-40, 40)) 
+  
+  print(last_plot())
+}
+
+```
+
+The correlation between the RMM index and the cEOF is `r scales::number(correlation, accuracy = 0.01)`, so they are essentially the same indices.
+Figure \@ref(fig:trajectory) show the trajectory of the two indices between March 6^th^ 2024 and March 31^st^ 2024 with arrows showing the difference.
+
+```{r sd_complex}
+# https://en.wikipedia.org/wiki/Variance#Generalizations
+sd_complex <- function(x) {
+  sqrt(sum(Mod(x - mean(x))^2)/(length(x)-1))
+}
+```
+
+(ref:trajectory-cap) Sample trajectory in the RMM/cEOF phase space between March 6^th^ 2024 and March 31^st^ 2024. Black arrows indicate the difference between the two indices.
+
+```{r trajectory, fig.width=5, fig.height=5}
+ceof$right |> 
+  copy() |> 
+  na.omit() |> 
+  _[, value_c := value_c/sd_complex(value_c)] |>
+  # _[, value_c := value_c/sd(Mod(value_c))] |> 
+  rmm[i = _, on = "time"] |> 
+  # _[, value_c := value_c/sd(amplitude)] |>
+  _[time >= as.Date("2024-03-06")] |>
+  eliotesis::sep_ReIm(format = "wide") |> 
+  ggplot(aes(Real, Imaginario)) +
+  ggforce::geom_circle(aes(x0 = 0, y0 = 0, r = 1), linewidth = 0.1,
+                       color = 'gray',
+                       inherit.aes = FALSE) +
+  geom_hline(yintercept = 0, 
+             color = 'gray') +
+  geom_vline(xintercept = 0,
+             color = 'gray') +
+  geom_path(aes(color = "cEOF")) +
+  geom_path(aes(RMM1, RMM2, color = "RMM")) +
+  geom_segment(data = \(d) d[time %in% JumpBy(time, 2)],
+               aes(x = RMM1, xend = Real, 
+                   y = RMM2, yend = Imaginario), 
+               arrow = arrow(angle = 10, length = unit(0.4, "lines"))) +
+  scale_x_continuous("RMM1") +
+  scale_y_continuous("RMM2") +
+  scale_colour_brewer(NULL, palette = "Set1") +
+  facet_wrap(~ PC) +
+  coord_equal(xlim = c(-4, 4), ylim = c(-4, 4))
+```
+
+They are almost identical up to an arbitrary scale factor.
+This scale factor comes up because the RMM1 is scaled so that each component has unit standard deviation in the climatological period, but I scaled the cEOF so that its *amplitude* has unit standard deviation[^1].
+
+[^1]: The variance [can be generalised to complex signals](https://en.wikipedia.org/wiki/Variance#Generalizations) naturally by considering it as the mean squared distance between each point and the average point.
+
+```{r rmm_quantile}
+rmm_quantile <- rmm[, ecdf(amplitude)(1)]
+
+ceof_threshold <- ceof$right |> 
+  copy() |> 
+  na.omit() |> 
+  _[, value_c := value_c/sd_complex(value_c)] |> 
+  _[, quantile(Mod(value_c), rmm_quantile)]
+```
+
+The arbitrary constant makes it hard to compare the amplitude of each index.
+The BOM uses amplitude equal to 1 to more or less define when the MJO is active, but that same cut-off is not necessarily useful for the cEOF index.
+There are a few ways of getting an equivalent threshold for the cEOF index.
+
+1.  Run a linear regression of the cEOF amplitude as a function of RMM amplitude and use the cEOF amplitude that corresponds to 1 RMM amplitude.
+2.  Do the same but using [orthogonal regression](https://en.wikipedia.org/wiki/Deming_regression#Orthogonal_regression), which might be more appropriate in this case because this procedure should be symmetrical.
+3.  Compute the quantile corresponding to the RMM threshold and use the value of that quantile in the cEOF amplitude series.
+
+Thankfully the three approaches give you basically the same answer (this might not be a coincidence), but I kind of like the 3^rd^ one better.
+For the record, the quantile associated with 1 RMM amplitude is `r scales::number(rmm_quantile, accuracy = 0.01)`, which translates to a threshhold value of `r scales::number(ceof_threshold, accuracy = 0.01)` in cEOF amplitude.
+
+Figure \@ref(fig:amplitude-cor) shows the relationship between the amplitude of each index and a line of best fit using orthogonal regression for each month and the variance explained by the line (this is actually the first Principal Component of the two series).
+
+```{r total_lm}
+total_lm <- function(x, y) {
+  pc <- prcomp(cbind(x,y))
+  
+  v <- pc$rotation
+  slope <- v[2,1]/v[1,1]
+  intercept <- mean(y) - slope*mean(x)
+  list(slope = slope,
+       intercept = intercept,
+       r2 = pc$sdev[1]^2/sum(pc$sdev^2))
+}
+```
+
+(ref:amplitude-cor-cap) Relationship between RMM amplitude and cEOF amplitude for each month. The blue line shows the orthogonal regression line, whose explained variance is shown as text, and the horizonal and vertical black lines indicate the `r scales::number(rmm_quantile, accuracy = 0.01)` quantile of each series (computed for the whole period and not for each month).
+
+```{r amplitude-cor, layout = "l-page"}
+ceof$right |> 
+  copy() |> 
+  na.omit() |> 
+  _[, value_c := value_c/sd_complex(value_c)] |>
+  _[, month := lubridate::month(time, label = TRUE)] |> 
+  rmm[i = _, on = "time"] |> 
+  ggplot(aes(amplitude, Mod(value_c))) +
+  geom_point(alpha = 0.2, size = 0.3)  +
+  geomtextpath::geom_textabline(data = \(x) x[, total_lm(amplitude, Mod(value_c)), by = .(month)], 
+                                aes(slope = slope, intercept = intercept, 
+                                    label = scales::percent(r2, accuracy = 0.1)),
+                                hjust = .8,
+                                size = 3,
+                                color = "#0d52bf") +
+  
+  geom_hline(aes(yintercept = ceof_threshold),  
+             color = "#0e141f") +
+  geom_vline(aes(xintercept = 1),
+             color = "#0e141f") +
+  scale_y_continuous("cEOF amplitude") +
+  scale_x_continuous("RMM amplitude") +
+  coord_equal() +
+  facet_wrap(~month, ncol = 4)
+```
+
+Although both variables are clearly highly correlated, there are some differences which make a sizeable proportion of days "active" by the cEOF definition but not "active" by the RMM definition and vice versa, especially in the boreal winter months.
+
+An important characteristic of the MJO is its intraseasonal timescale of between 30 and 80 days.
+@wheeler2004 computes the spectra of each RMM index, but with I can just compute the spectrum of the complex cEOF.
+The three spectra are very similar (Fig. \@ref(fig:spectrum)).
+
+(ref:spectrum-cap) Smoothed power spectra of the RMM1, RMM2 and cEOF indices scaled to unit area.
+
+```{r spectrum}
+ceof$right |> 
+  copy() |>
+  _[order(time)] |> 
+  _[, value_c := value_c/sd_complex(value_c)]  |> 
+  _[, .(time, value = value_c, variable = "cEOF")] |> 
+  rbind({
+    last_na <- rmm[is.na(amplitude), max(time)]
+    rmm |>
+      _[time > last_na] |>
+      # _[, .(time, value = complex(real = RMM1, imaginary = RMM2), variable = "RMM1")]
+      melt(id.vars = "time", measure.vars = c("RMM1", "RMM2"))
+  }) |>
+  
+  _[, spec.pgram(value, spans = c(43, 21, 43), plot = FALSE)[c("freq", "spec")], by = .(variable)] |> 
+  _[, pwr := spec*freq] |> 
+  _[, spec := spec/sum(spec*c(0, diff(freq))), by = variable] |> 
+  ggplot(aes(freq, spec*freq)) +
+  geom_vline(xintercept = c(1/30, 1/80), color = "gray", linetype = 2) +
+  geom_line(aes(color = variable), alpha = 0.75) +
+  scale_x_log10("Frequency (1/day)", guide = "axis_logticks",
+                sec.axis = sec_axis(~1/., name = "Period (day)",
+                                    breaks = c(365, 183, 80, 30, 14, 5))) +
+  scale_y_continuous("Power x Frequency") +
+  scale_color_manual("Index", 
+                     values = c("RMM1" = "#1b9e77",
+                                "RMM2" = "#d95f02",
+                                "cEOF" = "black")) +
+  coord_cartesian(xlim = c(0.5e-3, NA))
+```
+
+The main difference is that the cEOF spectrum is a bit more concentrated in the intraseasonal range and doesn't have that "bump"around 200 days that is visible in both the RMM1 and RMM2 indices.
+I don't know if that's something to do with the method or with the change in climatological period.
+In any case, I think this also highlights one advantage of treating a bivariate index as a complex signal, since it allows you to study a single spectrum for the whole signal.
+
+```{r add-phase}
+ceof$right <- ceof$right[, `:=`(PC = NULL,
+                                amplitude = Mod(value_c), 
+                                phase = as.numeric(cut(Arg(value_c), breaks = seq(-pi, pi, length.out = 9))))]
+```
+
+```{r olr_regr}
+OLR <- metR::ReadNetCDF(olr_file, 
+                        subset = list(lat = c(-50, 50)), key = TRUE) |>
+  _[, time2 := update(time, year = 2024)]
+
+OLR <- OLR[, .(mean = mean(olr, na.rm = TRUE)), by = .(lon, lat, time2)] |> 
+  _[order(time2)] |> 
+  _[, mean := FilterWave(mean, 0:3, action = 1), by = .(lon, lat)] |> 
+  _[OLR, on = c("lon", "lat", "time2")] |> 
+  _[, olr_a := olr - mean] |> 
+  _[, time2 := NULL] |> 
+  _[, olr := NULL] |> 
+  _[, mean := NULL]
+
+
+regr_ceof_rot <- OLR |> 
+  _[ceof$right, on = "time"] |> 
+  _[!is.na(olr_a)] |> 
+  _[, FitLm(olr_a, 
+            Real = Re(value_c), 
+            Imaginario = Im(value_c)),
+    by = .(lon, lat)] 
+
+regr_ceof <- OLR |> 
+  _[ceof$right, on = "time"] |> 
+  _[!is.na(olr_a)] |> 
+  _[, FitLm(olr_a, amplitude), by = .(lon, lat, phase)] |> 
+  _[term == "amplitude"] |> 
+  _[, term := "cEOF"]
+
+
+regr_rmm <- OLR |> 
+  rmm[i = _, on = "time"] |> 
+  _[!is.na(olr_a)] |> 
+  _[!is.na(amplitude)] |> 
+  _[, FitLm(olr_a, amplitude), by = .(lon, lat, phase)] |> 
+  _[term == "amplitude"] |> 
+  _[, term := "RMM"]
+
+rm(OLR)
+invisible(gc())
+```
+
+```{r regr_ceof_rotated}
+temp <- regr_ceof_rot |> 
+  _[term != "(Intercept)"] |> 
+  dcast(lon + lat ~ term, value.var = "estimate") |> 
+  _[, estimate := complex(real = Real, imaginary = Imaginario)] |> 
+  _[, `:=`(Real = NULL, Imaginario = NULL)]
+
+
+dangle <- diff(seq(-pi, pi, length.out = 9))[1]
+
+angles_in <- rev(rev(seq(-pi, pi, length.out = 9) + dangle/2)[-1])
+lab_angles <- setNames(paste0(seq_along(angles_in), " (", angles_in*180/pi, "º)"),
+                       seq_along(angles_in))
+
+regr_ceof_rotated <- lapply(seq_along(angles_in), function(a) {
+  copy(temp)[, estimate := Re(eliotesis::rotate(estimate, -angles_in[a]))] |> 
+    _[, phase := a] |> 
+    _[, term := "cEOF - linear"] |> 
+    _[]
+}) |> 
+  rbindlist()
+angles <- seq(-pi, pi, length.out = 9)
+
+```
+
+Finally, Figure \@ref(fig:regressions) shows the regression between OLR and the MJO using three different methods.
+Both the "RMM"and "cEOF"panels are the regression of OLR anomalies with the respective index amplitude for each "pizza slice" phase (i.e. the 1 phase encompases phases from `r knitr::combine_words(paste0(angles[1:2]*180/pi, "º"), and = " to ")`). 
+A problem with this method is that each panel discards a lot of information since only around 12% of observations fall into each slice.  
+
+The "cEOF - linear" panels are obtained by first computing the multivariate linear regression of OLR with the 0º and 90º phases of the complex series and then using a linear combination to compute the regression associated with any other phase.
+This method assumes that the relationship between OLR and the MJO is linear in every phase and that the total effect of the MJO can be linearly divided into the effect of two orthogonal phases (i.e. that the 0º phase is equal an oposite to the 180º phase and that the 45º phase is the combined effect of the 0º phase and the 90º phase in equal measure).
+The big advantage of this method is that it uses al the information available. 
+
+(ref:regressions-cap) Linear regression between each index and OLR for different phases. The "pizza slice"  used to construct each panel or the phase represented by each panel is shown by the small inset in the lower-left corner of each panel.
+
+```{r regressions, fig.width=9, fig.height=8.5, layout = "l-page"}
+rbind(regr_ceof_rotated, regr_rmm, regr_ceof) |>
+  _[, estimate := estimate/sd(estimate), by = term] |>
+  _[, term := factor(term, levels = c("RMM", "cEOF", "cEOF - linear"))] |> 
+  _[, angle := angles_in[as.numeric(phase)]*180/pi] |>
+  ggperiodic::periodic(lon = c(0, 360)) |> 
+  ggplot(aes(lon, lat)) +
+  geom_contour_fill(aes(z = estimate, fill = after_stat(level)),
+                    breaks = AnchorBreaks(0, exclude = 0)) +
+  map +
+  facet_grid(phase ~ term, labeller = labeller(phase = lab_angles)) +
+  scale_fill_divergent_discretised(NULL, 
+                                   high = "#8E521C",
+                                   low = "#00665E",
+                                   guide = guide_colorsteps(even.steps = FALSE)) +
+  wide_legend +
+  gggrid::grid_panel(grob = grob_spoke, 
+                     data = \(d) d[term == "cEOF - linear"],
+                     aes(angle = angle),
+                     inherit.aes = FALSE) +
+  
+  gggrid::grid_panel(grob = grob_slice(45), 
+                     data = \(d) d[term != "cEOF - linear"],
+                     aes(angle = angle),
+                     inherit.aes = FALSE) +
+  
+  coord_sf(ylim = c(-50, 50)) 
+```
+
+All three methods give more or less the same result that are (naturally) consistent with the cEOF description above; the "wet patch" moves east, reaching its maximum intensity over the Indian ocean and then being replaced by a "dry patch" with a similar behaviour.
+There is some differences in the small details, but it's not trivial to know how much of that-small scale structure is just sampling noise.
+The linear method has the advantage of resulting in smoother patterns with less noise and more large-scale signal.
+On the other hand, the linear method seems to exaggerate the intensity of the dry patch in phases 6-7, since this has to be equal and opposite to the wet patch in phases 2-3 by construction.
+
+The linear method also creates buttery smooth and oddly satisfying animations.
+
+(ref:animation2-cap) Animation of OLR regression on the difference phases of the cEOF.
+
+```{r animation2, animation.hook="gifski", interval = 1/20}
+angles <- seq(-180, 180, length.out = 80)[-1]
+
+for (a in seq_along(angles)) {
+  
+  copy(temp) |> 
+    _[, estimate := estimate/sd(estimate)] |>
+    _[, estimate := Re(eliotesis::rotate(estimate, -angles[a]*pi/180))] |> 
+    ggperiodic::periodic(lon = c(0, 360)) |> 
+    ggplot(aes(lon, lat)) +
+    geom_contour_fill(aes(z = estimate, fill = after_stat(level)),
+                      breaks = AnchorBreaks(0, exclude = 0)(c(-7, 7))) +
+    map +
+    gggrid::grid_panel(grob = grob_spoke, 
+                       aes(angle = angles[a]),
+                       inherit.aes = FALSE) +
+    
+    scale_fill_divergent_discretised(NULL, 
+                                     high = "#8E521C",
+                                     low = "#00665E",
+                                     guide = guide_colorsteps(even.steps = FALSE)) +
+    wide_legend +
+    coord_sf(ylim = c(-50, 50)) 
+  
+  print(last_plot())
+}
+
+```
