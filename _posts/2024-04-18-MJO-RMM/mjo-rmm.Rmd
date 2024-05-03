@@ -195,7 +195,7 @@ url_uwnd <- function(year) {
   paste0("https://downloads.psl.noaa.gov/Datasets/ncep.reanalysis/Dailies/pressure/uwnd.", year, ".nc")
 }
 
-years <- seq(2024, 2024-30)
+years <- seq(2024, 2024 - 30)
 
 path <- "~/Downloads/uwnd"
 dir.create(path, recursive = TRUE, showWarnings = FALSE)
@@ -204,7 +204,9 @@ files <- file.path(path, paste0(years, ".nc"))
 urls <- url_uwnd(years)
 
 invisible(curl::multi_download(urls, files, resume = TRUE, progress = FALSE))
+
 if (!file.exists(olr_file)) {
+  options(timeout = 360)
   download.file(olr_url, olr_file)
 }
 ```
