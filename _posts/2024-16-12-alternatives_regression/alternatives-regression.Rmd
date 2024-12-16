@@ -139,9 +139,9 @@ sst <- download_ersst() |>
 ```{r}
 y <- sst[lat %~% c(0, -50) & lon %~% 150] |> 
   dcast(year ~ lat, value.var = "t_a") |> 
-  _[, pp_a := `-50` - `0`] |>
-  # _[year(year) <= 2000, pp_a := `-50`] |>
-  # _[year(year) > 2000, pp_a := `0` - `-50`] |>
+  # _[, pp_a := `-50` - `0`] |>
+  _[year(year) <= 2000, pp_a := -`0`] |>
+  _[year(year) > 2000, pp_a :=  `0`] |>
   _[, pp_a := pp_a + rnorm(.N, sd = sd(pp_a)*0.2)] |>
   _[, .(year, pp_a)]
 ```
@@ -149,7 +149,7 @@ y <- sst[lat %~% c(0, -50) & lon %~% 150] |>
 
 
 ```{r}
-simple_reg <- sst[pp, on = "year"] |> 
+simple_reg <- sst[y, on = "year"] |> 
   _[, FitLm(t_a, pp_a), by = .(lon, lat)] 
 ```
 
@@ -347,23 +347,34 @@ svm_regr |>
 y_std <- copy(pp)[, pp_a := pp_a/sd(pp_a)] |> 
   _[, .(year, pp_a)] 
 
+W <- sst |>
+  na.omit() |>
+  _[, .SD[sd(t_a) != 0], by = .(lon, lat)] |>
+  # _[, .SD[.N > 5], by = .(lon, lat)] |> 
+  _[y_std, on = "year"] |>
+  _[, FitLm(pp_a, poly(t_a, degree = 2), r2 = TRUE), by = .(lon, lat)] |> 
+  _[term == term[1]] |> 
+  _[, .(lon, lat, w = adj.r.squared)] |> 
+  _[w < 0 , w := 0]
+
 e <- sst |> 
   na.omit() |> 
   _[, .SD[sd(t_a) != 0], by = .(lon, lat)] |> 
   _[y_std, on = "year"] |> 
-  # _[year(year) > 2000] |> 
-  _[, w := cor(t_a, pp_a)^2, by = .(lon, lat)] |> 
+  _[W, on = .NATURAL] |> 
   _[, t_a := t_a * w * sqrt(cos(lat*pi/180))] |>
-  EOF(t_a ~ lon + lat | year, n = 1:10, data = _)
-  
+  EOF(t_a ~ lon + lat | year, n = 1:10, data = _, rotate = TRUE)
+```
 
-W <- sst |> 
-  na.omit() |> 
-  _[, .SD[sd(t_a) != 0], by = .(lon, lat)] |> 
-  _[y_std, on = "year"] |> 
-  # _[year(year) > 2000] |> 
-  _[, .(w  = cor(t_a, pp_a)^2 * sqrt(cos(lat*pi/180))), by = .(lon, lat)] 
+```{r}
+W |> 
+  ggplot(aes(lon, lat)) +
+  geom_raster(aes(fill = w)) +
+  scale_fill_viridis_c()
+```
 
+
+```{r}
 pcs <- e$right[y_std, on = "year"] |> 
   na.omit() |> 
   _[, cor(t_a, pp_a), by = PC] |> 
@@ -373,10 +384,10 @@ pcs <- e$right[y_std, on = "year"] |>
 e$left |> 
   _[pcs, on = "PC"] |>
   _[, PC := reorder(PC, -r)] |> 
-  _[W, on = .NATURAL] |> 
+  _[W, on = .NATURAL] |>
   # _[PC == "PC"] |> 
   ggplot(aes(lon, lat)) +
-  geom_contour_fill(aes(z = t_a*sign*w)) +
+  geom_contour_fill(aes(z = t_a*sign/(sqrt(cos(lat*pi/180))))) +
   scale_fill_divergent() +
   facet_wrap(~ PC) 
 ```
@@ -387,8 +398,8 @@ e$right[y_std, on = "year"] |>
   _[, cor(t_a, pp_a), by = PC] |> 
   _[pcs, on = "PC"] |>
   _[, PC := reorder(PC, -r)] |> 
-  ggplot(aes(PC, r)) +
-  geom_col()
+  ggplot(aes(PC, V1^2)) +
+  geom_col(aes(fill = factor(sign)))
 
 
 ```
