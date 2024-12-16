@@ -1,0 +1,395 @@
+---
+title: "Stop using composites"
+description: |
+Composites are bad. Use regressions instead. 
+author:
+  - name: Elio Campitelli
+    url: https://eliocamp.github.io/
+    affiliation: Centro de Investigaciones del Mar y la Atmósfera
+    affiliation_url: http://www.cima.fcen.uba.ar/
+date: "2023-06-02"
+slug: stop-composites
+draft: yes
+categories:
+  - statistics
+output: 
+  distill::distill_article: 
+    self_contained: FALSE
+    pandoc-args: "--wrap=none"
+bibliography: bibliography.bib
+compare_updates_url: https://github.com/eliocamp/scrapbook/blob/main/_posts/2023-06-01-stop-composites/stop-composites.Rmd
+link-citations: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(code_folding = FALSE, 
+                      echo = FALSE, 
+                      cache = TRUE, 
+                      cache.extra = 1, 
+                      fig.width = 8,
+                      fig.align = "center")
+knitr::knit_hooks$set(crop = knitr::hook_pdfcrop)
+
+knitr::opts_hooks$set(label = function(options) {
+  if (is.null(options$fig.cap)) {
+    options$fig.cap <- paste0("(ref:", options$label, "-cap)")
+  }
+  
+  if (is.null(options$fig.alt)) {
+    options$fig.alt <- paste0("(ref:", options$label, "-alt)")
+  }
+  options
+})
+
+library(metR)
+library(data.table)
+library(ggplot2)
+library(magrittr)
+library(gt)
+
+theme_set(theme_minimal() +
+            theme(panel.background = element_rect(fill = "#fafafa", color = NA),
+                  legend.position = "bottom", 
+                  legend.key.width = grid::unit(1, "null"),
+                  legend.key.height = grid::unit(0.5, "line"), 
+                  legend.frame = element_rect(colour = "black", linewidth = 0.15), 
+                  legend.title.position = "top"))
+
+map <- list(
+  scale_x_continuous(name = NULL, expand = c(0, 0)),
+  scale_y_continuous(name = NULL, expand = c(0, 0)),
+  eliotesis::geom_qmap(),
+  coord_sf()
+)
+
+scale_pp <- scale_fill_divergent_discretised(name = NULL, low = "#8E521C", high = "#00665E",
+                                             guide = guide_colorsteps(barheight = 0.5,barwidth = 15)) 
+```
+
+
+```{r datos}
+download_ersst <- function() {
+  file <- here::here("_data/alternatives-regression/ersst.mon.Rds")
+  
+  if (file.exists(file)) {
+    return(file)
+  }
+  
+  dir.create(dirname(file), showWarnings = FALSE)
+  base_url <- "https://www.ncei.noaa.gov/pub/data/cmb/ersst/v5/netcdf/ersst.v5."
+  years <- 1979:2020
+  months <- formatC(1:12, width = 2, flag = "0")
+  dates <- data.table::CJ(years, months)[, paste0(years, months)]
+  
+  urls <- paste0(base_url, dates, ".nc")
+  files <- replicate(length(urls), tempfile())
+  
+  download.file(urls, files)
+  
+  data <- lapply(files, function(file) metR::ReadNetCDF(file, vars = c(t = "sst")))
+  data <- data.table::rbindlist(data)
+  data[, time := as.Date(lubridate::floor_date(time, "month"))]
+  saveRDS(data, file)
+  file
+}
+
+cmap <- function() {
+  cmap_url <- "https://downloads.psl.noaa.gov/Datasets/cmap/std/precip.mon.mean.nc"
+  cmap_file <- here::here("_data/alternatives-regression/precip.mon.mean.nc")
+  
+  if (file.exists(cmap_file)) {
+    return(cmap_file)
+  }
+  download.file(cmap_url, cmap_file, mode = "wb")  
+  cmap_file
+}
+
+```
+
+```{r pp}
+which_season <- "SON"
+pp <- cmap() %>% 
+  ReadNetCDF(vars = c(pp = "precip"), 
+             subset = list(lon = c(-60.74, -48)+360,
+                           lat = c(-34.6, -24))) %>% 
+  .[, .(pp = weighted.mean(pp, cos(lat*pi/180))), by = .(time = as.Date(time))] %>%
+  .[year(time) %between% c(1979, 2019)] %>%
+  .[, .(pp = mean(pp)), by = .(year = seasonally(time))] %>% 
+  .[, pp_a := Anomaly(pp), by = season(year)] 
+
+```
+
+```{r}
+pp |> 
+  ggplot(aes(year, pp_a)) +
+  geom_line()
+```
+
+
+
+
+```{r sst}
+sst <- download_ersst() |> 
+  readRDS() |> 
+  _[year(time) %between% c(1979, 2019)] |> 
+  _[, .(t = mean(t, na.rm = TRUE)), by = .(year = seasonally(time), lon, lat)] |> 
+  _[, t_a := Anomaly(t), by = .(lon, lat, season(year))]
+```
+
+```{r}
+y <- sst[lat %~% c(0, -50) & lon %~% 150] |> 
+  dcast(year ~ lat, value.var = "t_a") |> 
+  _[, pp_a := `-50` - `0`] |>
+  # _[year(year) <= 2000, pp_a := `-50`] |>
+  # _[year(year) > 2000, pp_a := `0` - `-50`] |>
+  _[, pp_a := pp_a + rnorm(.N, sd = sd(pp_a)*0.2)] |>
+  _[, .(year, pp_a)]
+```
+
+
+
+```{r}
+simple_reg <- sst[pp, on = "year"] |> 
+  _[, FitLm(t_a, pp_a), by = .(lon, lat)] 
+```
+
+```{r}
+
+FitLmMultiple <- function(data, formula, value.var, ...) {
+  M <- metR:::.tidy2matrix(data, formula, value.var = "t_a")
+  reg <- stats::.lm.fit(cbind(`(Intercept)` = 1, ...), M$matrix)
+
+  terms <- dimnames(reg$qr)[[2]]
+  
+  t(coef(reg)) |> 
+    data.table::as.data.table() |> 
+    data.table::setnames(new = terms) |> 
+    cbind(M$coldims) |> 
+    data.table::melt(id.vars = colnames(M$coldims), 
+                     variable.name = "term",
+                     value.name = "estimate") 
+}
+```
+
+
+```{r}
+plot_regr <- function(data) {
+  data |> 
+    ggplot(aes(lon, lat)) +
+    geom_contour_fill(aes(z = estimate, fill = after_stat(level)), 
+                      breaks = AnchorBreaks(exclude = 0)) +
+    scale_fill_divergent_discretised(NULL) +
+    map +
+    annotate(x = 150, y = c(0, -50), geom = "point")
+}
+```
+
+```{r}
+simple_reg |> 
+  _[term == "pp_a"] |> 
+  plot_regr()
+```
+
+
+```{r}
+clean_data <- sst[pp, on = "year"] |> 
+  na.omit()  
+
+multiple_reg <- clean_data |> 
+  FitLmMultiple(year ~ lon + lat, value.var = "t_a", y = pp$pp_a) 
+```
+
+
+```{r}
+
+multiple_reg |> 
+  plot_regr() +
+  annotate(x = 150, y = c(0, -50), geom = "point")
+```
+
+
+```{r, PerceptronLm}
+PerceptronLm <-  function(data, formula, value.var, y) {
+  perceptron_train <- function(X, y, epochs = 100, lambda = 10) {
+    X <- cbind(1, X)
+    W <- rnorm(ncol(X))
+    Ws <- vector("list", epochs)
+    accuracy <- rep(NA,  epochs)
+    
+    for (e in seq_len(epochs)) {
+      for (i in seq_len(nrow(X))) {
+        y_hat <- sum(W * X[i, ])
+        
+        pred <- sign(as.numeric(y_hat >= 0) - 0.5)
+        
+        W <- W + lambda*(y[i] - pred)*X[i, ]
+      }
+      
+      W <- W/sqrt(sum(W^2))
+      y_hat <- X %*% matrix(W, ncol = 1)
+      pred <- sign(as.numeric(y_hat >= 0) - 0.5)
+      
+      accuracy[e] <- mean((y - pred) == 0)
+      Ws[[e]] <- W
+      
+      if (accuracy[e] == 1) break
+      
+    }
+    
+    return(Ws[[which.max(accuracy)]])
+  }
+  
+  M <- metR:::.tidy2matrix(data, formula, value.var = value.var)
+  
+  p <- perceptron_train(M$matrix, sign(y))
+  
+  M$coldims[, estimate := p[-1]][]
+  
+}
+```
+
+```{r}
+
+e <- EOF(t_a ~ year | lon + lat, data = data, n = 1:40)
+
+MM <- e$left |> 
+  dcast(year ~ PC, value.var = "t_a") |> 
+  _[, -1] |> 
+  as.matrix()
+
+canon <- CCA::cc(MM, cbind(y))
+
+
+merge(e$right, 
+      data.table(coefficients = canon$xcoef[, 1], 
+                 PC = canon$names$Xnames)
+) |> 
+  _[, .(estimate = sum(t_a*coefficients)), by = .(lon, lat)] |> 
+  plot_regr()
+
+
+```
+
+```{r}
+# fit_cv <- lm2d:::fit_cv
+# lm2d_rege <- sst |> 
+#   lm2d::lm2d(t_a ~ year | lon + lat, y = pp$pp_a, method = "cv", data = _)
+```
+
+```{r}
+CCLM <-  function(data, formula, value.var, y) {
+  M <- metR:::.tidy2matrix(data, formula, value.var = value.var)
+  
+browser()
+  M$coldims[, estimate := p[-1]][]
+  
+}
+```
+
+```{r}
+sst |> 
+  na.omit() |>
+  CCLM(year ~ lon + lat, value.var = "t_a", y = y$pp_a)
+```
+
+
+```{r}
+perceptron_reg <- sst |> 
+  na.omit() |>
+  PerceptronLm(year ~ lon + lat, value.var = "t_a", y = y$pp_a)
+```
+
+```{r}
+perceptron_reg |> 
+  plot_regr()
+```
+
+
+```{r}
+SVM <- function(data, formula, value.var, y,
+                kernel = "linear", ...) {
+  M <- metR:::.tidy2matrix(data, formula, value.var = value.var)
+  
+  res <- e1071::svm(M$matrix, y, kernel = kernel, type = "nu-regression", ...)
+  
+  list(model = res,
+       coef = M$coldims[, estimate := t(res$SV) %*% res$coefs][])
+}
+```
+
+```{r}
+clean_data <- sst |> 
+  na.omit() |>
+  _[, .SD[sd(t_a) != 0], by = .(lon, lat)]
+svm_regr <- clean_data |> 
+  SVM(year ~ lon + lat, value.var = "t_a", y = y$pp_a, kernel = "linear", nu = 0.00001) 
+```
+
+
+```{r}
+svm_regr$coef |> 
+  plot_regr()
+```
+
+```{r}
+
+svm_regr |> 
+  _[["model"]] |> 
+  with(data.table(fitted = fitted, 
+                residuals = residuals)) |> 
+  cbind(y) |> 
+  ggplot(aes(year, pp_a)) +
+  geom_line() +
+  geom_line(aes(y = fitted), color = "red")
+```
+
+```{r}
+y_std <- copy(pp)[, pp_a := pp_a/sd(pp_a)] |> 
+  _[, .(year, pp_a)] 
+
+e <- sst |> 
+  na.omit() |> 
+  _[, .SD[sd(t_a) != 0], by = .(lon, lat)] |> 
+  _[y_std, on = "year"] |> 
+  # _[year(year) > 2000] |> 
+  _[, w := cor(t_a, pp_a)^2, by = .(lon, lat)] |> 
+  _[, t_a := t_a * w * sqrt(cos(lat*pi/180))] |>
+  EOF(t_a ~ lon + lat | year, n = 1:10, data = _)
+  
+
+W <- sst |> 
+  na.omit() |> 
+  _[, .SD[sd(t_a) != 0], by = .(lon, lat)] |> 
+  _[y_std, on = "year"] |> 
+  # _[year(year) > 2000] |> 
+  _[, .(w  = cor(t_a, pp_a)^2 * sqrt(cos(lat*pi/180))), by = .(lon, lat)] 
+
+pcs <- e$right[y_std, on = "year"] |> 
+  na.omit() |> 
+  _[, cor(t_a, pp_a), by = PC] |> 
+  _[order(-V1^2)] |> 
+  _[, .(PC, sign = sign(V1), cor = V1, r = V1^2)]
+
+e$left |> 
+  _[pcs, on = "PC"] |>
+  _[, PC := reorder(PC, -r)] |> 
+  _[W, on = .NATURAL] |> 
+  # _[PC == "PC"] |> 
+  ggplot(aes(lon, lat)) +
+  geom_contour_fill(aes(z = t_a*sign*w)) +
+  scale_fill_divergent() +
+  facet_wrap(~ PC) 
+```
+
+
+```{r}
+e$right[y_std, on = "year"] |> 
+  _[, cor(t_a, pp_a), by = PC] |> 
+  _[pcs, on = "PC"] |>
+  _[, PC := reorder(PC, -r)] |> 
+  ggplot(aes(PC, r)) +
+  geom_col()
+
+
+```
+
