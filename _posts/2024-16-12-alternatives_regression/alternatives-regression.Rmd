@@ -45,7 +45,6 @@ library(metR)
 library(data.table)
 library(ggplot2)
 library(magrittr)
-library(gt)
 
 theme_set(theme_minimal() +
             theme(panel.background = element_rect(fill = "#fafafa", color = NA),
@@ -68,23 +67,26 @@ scale_pp <- scale_fill_divergent_discretised(name = NULL, low = "#8E521C", high 
 
 
 ```{r datos}
-download_ersst <- function() {
+ersst <- function() {
   file <- here::here("_data/alternatives-regression/ersst.mon.Rds")
   
   if (file.exists(file)) {
     return(file)
   }
-  
-  dir.create(dirname(file), showWarnings = FALSE)
+  dir.create(dirname(file), showWarnings = FALSE, recursive = TRUE)
   base_url <- "https://www.ncei.noaa.gov/pub/data/cmb/ersst/v5/netcdf/ersst.v5."
   years <- 1979:2020
   months <- formatC(1:12, width = 2, flag = "0")
   dates <- data.table::CJ(years, months)[, paste0(years, months)]
   
   urls <- paste0(base_url, dates, ".nc")
-  files <- replicate(length(urls), tempfile())
+  files <- file.path("_data/alternatives-regression/temp", 
+                     paste0("ersst_", dates, ".nc"))
+  dir.create(dirname(files[1]), showWarnings = FALSE, recursive = TRUE)
   
-  download.file(urls, files)
+  to_download <- !file.exists(files)
+  
+  res <- curl::multi_download(urls[to_download], files[to_download])
   
   data <- lapply(files, function(file) metR::ReadNetCDF(file, vars = c(t = "sst")))
   data <- data.table::rbindlist(data)
@@ -94,118 +96,179 @@ download_ersst <- function() {
 }
 
 cmap <- function() {
-  cmap_url <- "https://downloads.psl.noaa.gov/Datasets/cmap/std/precip.mon.mean.nc"
   cmap_file <- here::here("_data/alternatives-regression/precip.mon.mean.nc")
   
   if (file.exists(cmap_file)) {
     return(cmap_file)
   }
+  
+  dir.create(dirname(cmap_file), showWarnings = FALSE, recursive = TRUE)
+  cmap_url <- "https://downloads.psl.noaa.gov/Datasets/cmap/std/precip.mon.mean.nc"
   download.file(cmap_url, cmap_file, mode = "wb")  
+  
   cmap_file
 }
 
 ```
 
 ```{r pp}
-which_season <- "SON"
-pp <- cmap() %>% 
+sesa <- list(lon = c(-60.74, -48)+360,
+             lat =  c(-34.6, -24))
+pp <- cmap() |> 
   ReadNetCDF(vars = c(pp = "precip"), 
-             subset = list(lon = c(-60.74, -48)+360,
-                           lat = c(-34.6, -24))) %>% 
-  .[, .(pp = weighted.mean(pp, cos(lat*pi/180))), by = .(time = as.Date(time))] %>%
-  .[year(time) %between% c(1979, 2019)] %>%
-  .[, .(pp = mean(pp)), by = .(year = seasonally(time))] %>% 
-  .[, pp_a := Anomaly(pp), by = season(year)] 
+             subset = sesa) |> 
+  _[, .(pp = weighted.mean(pp, cos(lat*pi/180))), by = .(time = as.Date(time))] |> 
+  _[year(time) %between% c(1979, 2019)] |> 
+  _[, .(pp = mean(pp)), by = .(time = seasonally(time))] |> 
+  _[, pp_a := Anomaly(pp), by = season(time)] 
 
+sesabox <- annotate(xmin = sesa$lon[1], xmax = sesa$lon[2],
+                    ymin = sesa$lat[1], ymax = sesa$lat[2],
+                    geom = "rect", 
+                    fill = "#c061cb", alpha = 0.5,
+                    colour = "#613583", linewidth = 0.1)
 ```
-
-```{r}
-pp |> 
-  ggplot(aes(year, pp_a)) +
-  geom_line()
-```
-
-
-
 
 ```{r sst}
-sst <- download_ersst() |> 
+sst <- ersst() |> 
   readRDS() |> 
   _[year(time) %between% c(1979, 2019)] |> 
-  _[, .(t = mean(t, na.rm = TRUE)), by = .(year = seasonally(time), lon, lat)] |> 
-  _[, t_a := Anomaly(t), by = .(lon, lat, season(year))]
+  _[, .(t = mean(t, na.rm = TRUE)), by = .(time = seasonally(time), lon, lat)] |> 
+  _[, t_a := Anomaly(t), by = .(lon, lat, season(time))]
 ```
 
 ```{r}
-y <- sst[lat %~% c(0, -50) & lon %~% 150] |> 
-  dcast(year ~ lat, value.var = "t_a") |> 
-  # _[, pp_a := `-50` - `0`] |>
-  _[year(year) <= 2000, pp_a := -`0`] |>
-  _[year(year) > 2000, pp_a :=  `0`] |>
-  _[, pp_a := pp_a + rnorm(.N, sd = sd(pp_a)*0.2)] |>
-  _[, .(year, pp_a)]
-```
-
-
-
-```{r}
-simple_reg <- sst[y, on = "year"] |> 
-  _[, FitLm(t_a, pp_a), by = .(lon, lat)] 
-```
-
-```{r}
-
-FitLmMultiple <- function(data, formula, value.var, ...) {
-  M <- metR:::.tidy2matrix(data, formula, value.var = "t_a")
-  reg <- stats::.lm.fit(cbind(`(Intercept)` = 1, ...), M$matrix)
-
-  terms <- dimnames(reg$qr)[[2]]
-  
-  t(coef(reg)) |> 
-    data.table::as.data.table() |> 
-    data.table::setnames(new = terms) |> 
-    cbind(M$coldims) |> 
-    data.table::melt(id.vars = colnames(M$coldims), 
-                     variable.name = "term",
-                     value.name = "estimate") 
-}
-```
-
-
-```{r}
-plot_regr <- function(data) {
+plot_regr <- function(data, variable = estimate) {
   data |> 
     ggplot(aes(lon, lat)) +
-    geom_contour_fill(aes(z = estimate, fill = after_stat(level)), 
+    geom_contour_fill(aes(z = {{ variable }}, fill = after_stat(level)), 
                       breaks = AnchorBreaks(exclude = 0)) +
     scale_fill_divergent_discretised(NULL) +
-    map +
-    annotate(x = 150, y = c(0, -50), geom = "point")
+    map 
 }
 ```
 
-```{r}
-simple_reg |> 
-  _[term == "pp_a"] |> 
-  plot_regr()
-```
 
+In atmospheric science it's very common to have a target variable and to try to understand how it is related to a spatial variable defined on a grid. 
+For example, how is seasonal precipitation in southeastern South America affected by Global Sea Surface Temperatures? 
 
-```{r}
-clean_data <- sst[pp, on = "year"] |> 
-  na.omit()  
-
-multiple_reg <- clean_data |> 
-  FitLmMultiple(year ~ lon + lat, value.var = "t_a", y = pp$pp_a) 
-```
-
+As far as I'm aware, the typical method to do this is to compute a linear regression (or correlation) at each gridpoint and then plot the coefficients on a map. 
+The result is something like this:
 
 ```{r}
-
-multiple_reg |> 
+sst[pp, on = "time"] |> 
+  _[, FitLm(t_a, pp_a), by = .(lon, lat)] |> 
   plot_regr() +
-  annotate(x = 150, y = c(0, -50), geom = "point")
+  sesabox
 ```
+This pattern interpreted as that, on average, it rains more when Sea Surface Temperatures in the equatorial Pacific are higher than average and it rains less when temperatures are lower than average. 
+The typical El Niño signal. 
+Domain knowledge and model experiments help to support this conclusion, to elucidate the direction of causality () and also to understand that those signals in the southern Pacific are also caused by El Niño, and not directly causally linked to precipitation in southeastern South America. 
+
+This is fine and dandy, but I've never been totally satisfied with this statistical method. 
+
+First, since this is essentially fitting thousands of independent linear models, it's not trivial to compute the statistical significance of the whole pattern. 
+In general, people compute the statistical significance at each gridpoint and hatch significant area, which falls victim of the multiple comparisons problem. 
+It's possible to try to correct for multiple comparisons, but that comes with its own set of problems and also usually doesn't account for the problem of spatial autocorrelation (each gridpoint is not independent from the rest).
+
+Second is the hidden assumption that a single spatial pattern is enough to understand the relationship. 
+
+For example, look at that positive and negative signals in the Atlantic ocean. 
+It would be tempting to conclude that a the temperature difference between those two regions is important in some way, but those two signals could easily be completely independent in time.
+What I mean is that precipitation in the region might increase with positive temperature anomalies in the tropical Atlantic and negative temperature anomalies in the southern Atlantic and the gradient between the two regions might not play a role whatsoever. 
+
+This can be illustrated with a synthetic dataset consisting on the time series of temperature at 50°S 150°E before 2000 and negative temperature at 50°S 100°E after 2000. 
+The "gridpoint-wise" regression gives this: 
+
+```{r}
+y <- sst[lat %~% -50 & lon %~% c(150, 100)] |> 
+  dcast(time ~ lon, value.var = "t_a") |> 
+  _[year(time) <= 2000, pp_a := `150`] |>
+  _[year(time) > 2000, pp_a :=  - `100`] |>
+  _[, .(time, pp_a)]
+
+points <- annotate(x = c(150, 100), y = -50, geom = "point")
+```
+
+```{r}
+sst[y, on = "time"] |> 
+  _[, FitLm(t_a, pp_a), by = .(lon, lat)] |> 
+  plot_regr() +
+  points
+```
+
+Which might suggest that this fake time series is somehow associated with a big temperature gradient south of Australia. 
+
+
+So, are there any alternative methods that can solve any of these issues? 
+
+### Field significance 
+
+One interesting propsal that tries to address the first issue is [DelSole]. 
+The idea is to essentially turn the problem on its head and instead.
+Instead of fitting multiple models of temperature as a function of precipitation like in the typical method, it tries to fit a single model of precipitation as a function of temperature. 
+In other words, find the linear combination of gridpoints that best predict precipitation. 
+
+The issue, of course, is that in most gridded dataset there are much more gridpoints that timesteps so it's an overdeteremined problem. 
+The trick is then to apply some form of regularisation of variable selection. 
+
+What [DelSole] proposes is to reduce the dimensionality by doing the fit in Principal Component space: compute only the first P Principal Components of the data with P less than the number of observations, fit the model, and then compute the spatial field. 
+They propose using crossvalidation to select how many Principal Components to keep and derive a single statistic to compute the field significance. 
+
+I implemented [DelSole] method in the lm2d package (which is very much not ready for public consumption)
+
+```{r}
+model <- sst[pp, on = "time"] |> 
+  na.omit() |> 
+  lm2d::lm2d(t_a ~ time | lon + lat, y = pp_a, 
+             data = _)
+```
+
+The model used only `r model$summary$non_zero` principal components for the fit, and their linear combination looks like this
+
+```{r}
+model$field |> 
+  plot_regr(pp_a)
+```
+
+This is very similar to the "point-wise" regression above. 
+The model statistic is also highly significant ($p.value `r scales::pvalue(model$summary$p.value)`$). 
+
+A limitation of this method is the use of Principal Components, which makes the whole regression field dependent on the domain. 
+There's also no guarantee that the Principal Component directions are the optimal directions to capture the relationship of interest. 
+For example, the regression field of the fake data is this: 
+
+```{r}
+model <- sst[y, on = "time"] |> 
+  na.omit() |> 
+  lm2d::lm2d(t_a ~ time | lon + lat, y = pp_a, 
+             data = _, )
+```
+
+```{r}
+model$field |> 
+  plot_regr(pp_a)
+```
+
+Which is pretty much nonsense. 
+
+Interestingly, an alternative implementation of the [DeSolde] method that uses lasso regression to select the principal components does a much better job in this case: 
+
+```{r}
+model <- sst[y, on = "time"] |> 
+  na.omit() |> 
+  lm2d::lm2d(t_a ~ time | lon + lat, y = pp_a, 
+             method = lm2d::fit_lasso(), 
+             data = _, )
+```
+
+```{r}
+model$field |> 
+  plot_regr(pp_a)
+```
+
+However, I'm not sure if the statistic derived by [DeSolde] is valid for this selection method. 
+
 
 
 ```{r, PerceptronLm}
@@ -248,50 +311,12 @@ PerceptronLm <-  function(data, formula, value.var, y) {
 }
 ```
 
-```{r}
-
-e <- EOF(t_a ~ year | lon + lat, data = data, n = 1:40)
-
-MM <- e$left |> 
-  dcast(year ~ PC, value.var = "t_a") |> 
-  _[, -1] |> 
-  as.matrix()
-
-canon <- CCA::cc(MM, cbind(y))
-
-
-merge(e$right, 
-      data.table(coefficients = canon$xcoef[, 1], 
-                 PC = canon$names$Xnames)
-) |> 
-  _[, .(estimate = sum(t_a*coefficients)), by = .(lon, lat)] |> 
-  plot_regr()
-
-
-```
 
 ```{r}
 # fit_cv <- lm2d:::fit_cv
 # lm2d_rege <- sst |> 
 #   lm2d::lm2d(t_a ~ year | lon + lat, y = pp$pp_a, method = "cv", data = _)
 ```
-
-```{r}
-CCLM <-  function(data, formula, value.var, y) {
-  M <- metR:::.tidy2matrix(data, formula, value.var = value.var)
-  
-browser()
-  M$coldims[, estimate := p[-1]][]
-  
-}
-```
-
-```{r}
-sst |> 
-  na.omit() |>
-  CCLM(year ~ lon + lat, value.var = "t_a", y = y$pp_a)
-```
-
 
 ```{r}
 perceptron_reg <- sst |> 
@@ -301,7 +326,8 @@ perceptron_reg <- sst |>
 
 ```{r}
 perceptron_reg |> 
-  plot_regr()
+  plot_regr() +
+  points
 ```
 
 
@@ -322,13 +348,15 @@ clean_data <- sst |>
   na.omit() |>
   _[, .SD[sd(t_a) != 0], by = .(lon, lat)]
 svm_regr <- clean_data |> 
-  SVM(year ~ lon + lat, value.var = "t_a", y = y$pp_a, kernel = "linear", nu = 0.00001) 
+  SVM(year ~ lon + lat, value.var = "t_a", y = y$pp_a, 
+      kernel = "linear", nu = 1e-4) 
 ```
 
 
 ```{r}
 svm_regr$coef |> 
-  plot_regr()
+  plot_regr() +
+  points
 ```
 
 ```{r}
@@ -336,12 +364,145 @@ svm_regr$coef |>
 svm_regr |> 
   _[["model"]] |> 
   with(data.table(fitted = fitted, 
-                residuals = residuals)) |> 
+                  residuals = residuals)) |> 
   cbind(y) |> 
   ggplot(aes(year, pp_a)) +
   geom_line() +
   geom_line(aes(y = fitted), color = "red")
 ```
+
+
+```{r}
+M <- sst |>
+  na.omit() |>
+  _[, .SD[sd(t_a) != 0], by = .(lon, lat)] |>
+  metR:::.tidy2matrix(year ~ lon + lat, value.var = "t_a")
+```
+
+
+Sparse Partial Least Squares
+
+In principle this method 
+
+```{r}
+model <- spls::spls(M$matrix, pp$pp_a,
+                    eta = 0.8,
+                    K = 2,
+                    select = "pls2")
+
+lapply(model$betamat, \(mat) {
+  M$coldims |> 
+    copy() |> 
+    _[, estimate := as.vector(mat)] 
+}) |> 
+  rbindlist(idcol = "coef") |> 
+  _[, estimate := estimate/sd(estimate), by = coef] |> 
+  plot_regr() +
+  facet_wrap(~ coef)
+
+```
+
+```{r}
+model <- spls::spls(M$matrix, pp$pp_a,
+                    eta = 0.8,
+                    K = 5,
+                    select = "pls2")
+
+lapply(model$betamat, \(mat) {
+  M$coldims |> 
+    copy() |> 
+    _[, estimate := as.vector(mat)] 
+}) |> 
+  rbindlist(idcol = "coef") |> 
+  _[, estimate := estimate/sd(estimate), by = coef] |> 
+  plot_regr() +
+  facet_wrap(~ coef)
+
+```
+
+
+```{r}
+eof <- sst |> 
+  copy() |> 
+  na.omit() |> 
+  _[, eof := t_a*sqrt(cos(lat*pi/180))] |>
+  EOF(eof ~ lat + lon | year, 
+      n = 1:60, 
+      data = _)
+```
+
+```{r}
+M <- eof$right |> 
+  metR:::.tidy2matrix(year ~ PC, value.var = "eof")
+
+model <- spls::spls(M$matrix, y$pp_a,
+                    eta = 0.1,
+                    K = 5,
+                    select = "pls2")
+
+coefs <- lapply(model$betamat, \(mat) {
+  M$coldims |> 
+    copy() |> 
+    _[, estimate := as.vector(mat)] 
+}) |> 
+  rbindlist(idcol = "coef") 
+
+coefs |> 
+  copy() |> 
+  _[, estimate := estimate/sd(estimate), by = coef] |>
+  ggplot(aes(PC, estimate)) +
+  geom_col() +
+  facet_wrap(~ coef)
+
+coefs |> 
+  merge(eof$left, allow.cartesian	= TRUE) |>
+  _[, .(estimate = sum(estimate*eof)), by = .(lon, lat, coef)] |>
+  _[, estimate := estimate/sd(estimate), by = coef] |>
+  plot_regr() +
+  facet_wrap(~ coef)
+
+```
+
+```{r}
+eof$left |> 
+  copy() |> 
+  setnames("eof", "estimate") |> 
+  _[as.numeric(PC) < 6] |> 
+  plot_regr() +
+  facet_wrap(~PC)
+```
+
+LARS
+
+Tried, it, but didn't seem to work. 
+I think the problem is that I have highly correlated predictors (nearby gridpoints are highly correlated) and the wikipedia article says that this method has problems with multicollinearity. 
+
+
+```{r}
+model <- lars::lars(M$matrix, y = pp$pp_a, type = "lar", 
+                    use.Gram = FALSE, max.steps = 50)
+
+M$coldims |> 
+  copy() |> 
+  _[, estimate := as.vector(coef(model)[34 ])] |> 
+  ggplot(aes(lon, lat)) +
+  geom_contour_fill(aes(z = estimate)) + 
+  scale_fill_divergent(NULL) +
+  map 
+
+```
+
+
+
+```{r}
+copy(y) |> 
+  _[, pred := predict(model)] |> 
+  ggplot(aes(year, pred)) +
+  geom_line(aes(color = "pred")) +
+  geom_line(aes(y = pp_a, color = "truth"))
+
+```
+
 
 ```{r}
 y_std <- copy(pp)[, pp_a := pp_a/sd(pp_a)] |> 
@@ -363,7 +524,7 @@ e <- sst |>
   _[y_std, on = "year"] |> 
   _[W, on = .NATURAL] |> 
   _[, t_a := t_a * w * sqrt(cos(lat*pi/180))] |>
-  EOF(t_a ~ lon + lat | year, n = 1:10, data = _, rotate = TRUE)
+  EOF(t_a ~ lon + lat | year, n = 1:10, data = _)
 ```
 
 ```{r}
@@ -389,18 +550,145 @@ e$left |>
   ggplot(aes(lon, lat)) +
   geom_contour_fill(aes(z = t_a*sign/(sqrt(cos(lat*pi/180))))) +
   scale_fill_divergent() +
-  facet_wrap(~ PC) 
+  facet_wrap(~ PC) +
+  points
 ```
 
 
 ```{r}
-e$right[y_std, on = "year"] |> 
+order <- e$right[y_std, on = "year"] |> 
   _[, cor(t_a, pp_a), by = PC] |> 
   _[pcs, on = "PC"] |>
-  _[, PC := reorder(PC, -r)] |> 
+  _[, PC := reorder(PC, -r)] 
+
+order |> 
   ggplot(aes(PC, V1^2)) +
   geom_col(aes(fill = factor(sign)))
 
+
+```
+
+```{r}
+y_r <- e$right[PC == order$PC[1]] |> 
+  _[y_std, on = "year"] |> 
+  _[, .(year, pp_a = ResidLm(pp_a, t_a))]
+
+
+W <- sst |>
+  na.omit() |>
+  _[, .SD[sd(t_a) != 0], by = .(lon, lat)] |>
+  # _[, .SD[.N > 5], by = .(lon, lat)] |> 
+  _[y_r, on = "year"] |>
+  _[, FitLm(pp_a, poly(t_a, degree = 2), r2 = TRUE), by = .(lon, lat)] |> 
+  _[term == term[1]] |> 
+  _[, .(lon, lat, w = adj.r.squared)] |> 
+  _[w < 0 , w := 0]
+
+e <- sst |> 
+  na.omit() |> 
+  _[, .SD[sd(t_a) != 0], by = .(lon, lat)] |> 
+  _[y_r, on = "year"] |> 
+  _[W, on = .NATURAL] |> 
+  _[, t_a := t_a * w * sqrt(cos(lat*pi/180))] |>
+  EOF(t_a ~ lon + lat | year, n = 1:10, data = _)
+```
+
+```{r}
+pcs <- e$right[y_std, on = "year"] |> 
+  na.omit() |> 
+  _[, cor(t_a, pp_a), by = PC] |> 
+  _[order(-V1^2)] |> 
+  _[, .(PC, sign = sign(V1), cor = V1, r = V1^2)]
+
+e$left |> 
+  _[pcs, on = "PC"] |>
+  _[, PC := reorder(PC, -r)] |> 
+  _[W, on = .NATURAL] |>
+  _[PC == "PC2"] |>
+  ggplot(aes(lon, lat)) +
+  geom_contour_fill(aes(z = t_a*sign/(sqrt(cos(lat*pi/180))))) +
+  scale_fill_divergent() +
+  facet_wrap(~ PC) +
+  points
+```
+
+```{r}
+
+M <- sst |>
+  na.omit() |>
+  _[, .SD[sd(t_a) != 0], by = .(lon, lat)] |>
+  metR:::.tidy2matrix(year ~ lon + lat, value.var = "t_a")
+
+debugonce(sRDA::sCCA)
+
+as_nodrop <- function(x) {
+  class(x) <- c("nodrop_matrix", class(x))
+  x
+}
+`[.nodrop_matrix` <- function(x, ...) {
+  class(x) <- class(x)[-1]
+  
+  base::`[`(x, ..., drop=FALSE)
+}
+
+cca <- CVR::SparseCCA(M$matrix, cbind(y$pp_a))
+
+```
+
+```{r}
+pp |> 
+  copy() |> 
+  _[, pred := predict(model, newx = M$matrix)] |> 
+  ggplot(aes(year, pred)) +
+  geom_line() +
+  geom_line(color= "red", aes(y = pp_a))
+```
+
+
+```{r}
+y_std <- copy(pp)[, pp_a := pp_a/sd(pp_a)] |> 
+  _[, .(year, pp_a)] 
+
+d <- sst |>
+  na.omit() |>
+  _[, .SD[sd(t_a) != 0], by = .(lon, lat)] |>
+  _[y_std, on = "year"]
+
+
+max <- d |> 
+  _[, cor(pp_a, t_a)^2, by = .(lon, lat)] |> 
+  _[which.max(V1)]
+
+d[max, on = c("lon", "lat")] |> 
+  _[, .(year, base = t_a)] |> 
+  merge(d) |> 
+  _[, FitLm(t_a, base), by = .(lon, lat)] |> 
+  _[term == "base"] |> 
+  plot_regr() 
+
+```
+
+```{r}
+
+y_r <- d[max, on = c("lon", "lat")] |> 
+  _[, .(year, pp_a = ResidLm(pp_a, t_a))]
+
+d <- sst |>
+  na.omit() |>
+  _[, .SD[sd(t_a) != 0], by = .(lon, lat)] |>
+  _[y_r, on = "year"]
+
+
+max <- d |> 
+  _[, cor(pp_a, t_a)^2, by = .(lon, lat)] |> 
+  _[which.max(V1)]
+
+d[max, on = c("lon", "lat")] |> 
+  _[, .(year, base = t_a)] |> 
+  merge(d) |> 
+  _[, FitLm(t_a, base), by = .(lon, lat)] |> 
+  _[term == "base"] |> 
+  plot_regr() 
 
 ```
 
