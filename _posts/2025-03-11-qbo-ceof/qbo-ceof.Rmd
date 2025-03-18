@@ -1,0 +1,533 @@
+---
+title: "QBO using complex Empirical Orthogonal Functions"
+description: |
+author:
+  - name: Elio Campitelli
+    url: https://eliocamp.github.io/
+    affiliation: Monash University
+    affiliation_url: https://www.monash.edu/
+date: "2025-03-18"
+slug: qbo-ceof
+draft: no
+categories:
+  - ceof
+  - qbo
+output: 
+  distill::distill_article: 
+    self_contained: FALSE
+    pandoc-args: "--wrap=none"
+bibliography: bibliography.bib
+compare_updates_url: https://github.com/eliocamp/scrapbook/blob/main/_posts/2025-03-11-qbo-ceof/qbo-ceof.Rmd
+link-citations: yes
+editor_options: 
+  markdown: 
+    wrap: sentence
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(code_folding = FALSE, 
+                      echo = FALSE, 
+                      cache = TRUE, 
+                      cache.extra = 1, 
+                      # fig.width = 8,
+                      fig.align = "center")
+knitr::knit_hooks$set(crop = knitr::hook_pdfcrop)
+
+knitr::opts_hooks$set(label = function(options) {
+  if (is.null(options$fig.cap)) {
+    options$fig.cap <- paste0("(ref:", options$label, "-cap)")
+  }
+  
+  if (is.null(options$fig.alt)) {
+    options$fig.alt <- paste0("(ref:", options$label, "-alt)")
+  }
+  options
+})
+
+library(metR)
+library(data.table)
+library(ggplot2)
+library(rcdo)
+library(patchwork)
+
+
+theme_set(theme_minimal() +
+            theme(panel.background = element_rect(fill = "#fafafa", color = NA),
+                  legend.position = "bottom", 
+                  legend.key.width = grid::unit(1, "null"),
+                  legend.key.height = grid::unit(0.5, "line"), 
+                  legend.frame = element_rect(colour = "black", linewidth = 0.15), 
+                  legend.title.position = "top"))
+
+map <- list(
+  scale_x_continuous(name = NULL, expand = c(0, 0)),
+  scale_y_continuous(name = NULL, expand = c(0, 0)),
+  eliotesis::geom_qmap(),
+  coord_sf()
+)
+
+scale_level <- scale_y_level(labels = \(x) paste0(x, "hPa"))
+```
+
+```{r}
+ReIm <- function(complex) {
+  list(Real = Re(complex), Imaginary = Im(complex))
+}
+
+
+sep_ReIm <- function (data, column = NULL, format = c("longer", "wider")) {
+  R <- part <- I <- NULL
+  names <- c("Real", "Imaginary")
+  if (is.null(column)) {
+    complex <- vapply(data, function(x) inherits(x, "complex"), 
+                      TRUE)
+    if (sum(complex) > 1) {
+      stop("`column` es NULL and more than one complex column found")
+    }
+    if (sum(complex) == 0) {
+      stop("`column` missing and no complex column found. Returning unchanged data")
+    }
+    col <- colnames(data)[complex]
+  }
+  else {
+    col <- deparse(substitute(column))
+  }
+  data <- data.table::copy(data)[, `:=`((names), ReIm(get(col)))]
+  if (format[1] == "longer") {
+    data[, `:=`(c(col), NULL)]
+    data <- data.table::setDT(tidyr::pivot_longer(data, 
+                                                  Real:Imaginary, names_to = "part", values_to = col))
+    data[, `:=`(part, factor(part, levels = names, ordered = TRUE))]
+  }
+  return(data[])
+}
+
+```
+
+```{r datos}
+u_fun <- function() {
+  file <- here::here("_data/qbo-ceof/u.nc")
+  
+  if (file.exists(file)) {
+    return(file)
+  }
+  dir.create(dirname(file), showWarnings = FALSE, recursive = TRUE)
+  
+  request <- list(
+    dataset_short_name = "reanalysis-era5-pressure-levels-monthly-means",
+    product_type = "monthly_averaged_reanalysis",
+    variable = "u_component_of_wind",
+    pressure_level = c("1", "2", "3", "5", "7", "10", "20", "30", "50", "70", "100", "125", "150", "175", "200", "225", "250", "300", "350", "400", "450", "500", "550", "600", "650", "700", "750", "775", "800", "825", "850", "875", "900", "925", "950", "975", "1000"),
+    year = c("1940", "1941", "1942", "1943", "1944", "1945", "1946", "1947", "1948", "1949", "1950", "1951", "1952", "1953", "1954", "1955", "1956", "1957", "1958", "1959", "1960", "1961", "1962", "1963", "1964", "1965", "1966", "1967", "1968", "1969", "1970", "1971", "1972", "1973", "1974", "1975", "1976", "1977", "1978", "1979", "1980", "1981", "1982", "1983", "1984", "1985", "1986", "1987", "1988", "1989", "1990", "1991", "1992", "1993", "1994", "1995", "1996", "1997", "1998", "1999", "2000", "2001", "2002", 
+             "2003", "2004", "2005", "2006", "2007", "2008", "2009", "2010", "2011", "2012", "2013", "2014", "2015", "2016", "2017", "2018", "2019", "2020", "2021", "2022", "2023", "2024", "2025"),
+    month = c("01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12"),
+    time = "00:00",
+    data_format = "netcdf",
+    download_format = "unarchived",
+    grid = c(1, 1),
+    area = c(20, 0, -20, 360),
+    target = basename(file)
+  )
+  
+  ecmwfr::wf_request(request, path = dirname(file))
+  
+  file
+}
+```
+
+```{r u_mean} 
+u <- u_fun() 
+
+u_mean <- u |> 
+  ReadNetCDF("u", subset = list(latitude = c(-5, 5))) |> 
+  _[, .(u = mean(u)), by = .(time = valid_time, lev = pressure_level)] |> 
+  _[, u_a := u - mean(u), by = .(lev, month(time))] 
+
+```
+
+Every 14 months or so the 30hPa mean zonal wind between 5ºS and 5ºN goes from easterly to westerly.
+This oscillation is so clear and regular that it can be clearly seen just in the raw data (Fig. \@ref(fig¨:u-timeseries).
+
+(ref:u-timeseries) Time series of zonal mean zonal wind between 5ºS and 5ºN at 30hPa.
+
+```{r u-timeseries}
+u_mean |> 
+  _[lev == 30] |> 
+  _[year(time) > 1979] |> 
+  # _[, van := Im(spectral::analyticFunction(u))] |>
+  ggplot(aes(time, u)) +
+  geom_line() +
+  # geom_line(aes(y = van), color = "red") +
+  scale_y_continuous("Zonanl wind") +
+  scale_x_datetime(NULL, expand = c(0, 0))
+```
+
+This is not just an oscillation, though.
+The positive and negative anomalies propagate from the upper stratosphere to the lower stratosphere, although this effect is better appreciated by looking at the zonal wind anomalies (Fig. \@ref(fig:hov-anomalies)).
+
+(ref:hov-anomalies) Hovmoller plot of zonal mean zonal wind anomalies between 5ºS and 5ºN.
+
+```{r hov-anomalies}
+u_mean |> 
+  _[year(time) %between% c(1979, 1990)] |> 
+  ggplot(aes(time, lev)) +
+  geom_contour_fill(aes(z = u_a, fill = ..level..), breaks = AnchorBreaks(exclude = 0))+
+  scale_fill_divergent_discretised("Equatorial zonal wind anomalies") +
+  scale_level +
+  scale_x_datetime(NULL, expand = c(0, 0))
+```
+
+This very conspicuous mode is called the Quasi-Biennial Oscillation, or QBO.
+
+Given that this is a propagating mode in principle it's not enough to use a single time series to represent it, although it's very common to read about "Easterly QBO" and "Westerly QBO" phasees.
+One option is to combine two EOFS, similar to what the [Bureau of Meteorology does with the Madden-Julian Oscillation](http://www.bom.gov.au/climate/mjo/).
+Some researchers [are doing this](https://www.gfd-dennou.org/arch/eriko/QBO/index.html) [@eof_qbo], although I don't know how popular is this approach (the dataset in that webpage hasn't been updated since 2011).
+
+But, given that it's a propagating mode, it might be interesting to use complex EOFs to build an index (also like the [Madden-Julien Oscillation](/posts/2024-04-18-MJO-RMM/)).
+One article from two years ago proposed this idea [@xu2022] and it looks promising.
+Although from the start I have to admit that the QBO is so clear in observations that I don't expect regular EOFs to have that much trouble and that the results are going to be very similar.
+
+First of all there's two ways of computing the QBO with complex EOF: I could compute them by level or by time.
+The results are not terribly dissimilar, but I believe the edge effects of the required Fourier transform are going to be worse when computing in "level space".
+I also don't know how the irregular vertical grid would affect the results.
+In any case, for this post I'm computing the complex EOF by time, which is what @xu2022 also did.
+I'm not doing any weighting (although I should).
+I'm also rotating and reflecting the complex axis to make the results comparable to the regular EOF results.
+
+```{r}
+set.seed(42)
+ceof <- u_mean |> 
+  copy() |> 
+  _[lev <= 100] |>
+  _[, u_a := u - mean(u), by = .(lev, month(time))] |> 
+  _[, qbo := spectral::analyticFunction(u_a), by = .(lev)] |> 
+  EOF(qbo ~ time | lev, n = 1, data = _)
+
+eof <- u_mean |> 
+  copy() |> 
+  _[lev <= 100] |>
+  _[, qbo := u_a] |> 
+  EOF(qbo ~ time | lev, n = 1:2, data = _)
+```
+
+```{r}
+rotate_ceof <- function (x, variable, rot) {
+  variable <- deparse(substitute(variable))
+  x$left <- x$left[rot, on = "PC"]
+  x$left[[variable]] <- eliotesis::rotate(x$left[[variable]], x$left$angle)
+  x$left[, `:=`(angle, NULL)]
+  x$right <- x$right[rot, on = "PC"]
+  x$right[[variable]] <- eliotesis::rotate(x$right[[variable]], x$right$angle)
+  x$right[, `:=`(angle, NULL)]
+  x
+}
+```
+
+```{r}
+max_cor <- eof$left[PC == "PC1"] |> 
+  _[ceof$left, on = c("time", "PC")] |> 
+  _[, eliotesis::correlate_complex(i.qbo, qbo), by = PC] |>
+  dcast(PC + angle ~ part, value.var = "correlation") |> 
+  _[Imaginario > 0] |> 
+  _[which.max(Real), .(PC, angle)]
+
+
+ceof <- rotate_ceof(ceof, qbo, max_cor)
+ceof$left$qbo <- Conj(ceof$left$qbo)
+ceof$right$qbo <- Conj(ceof$right$qbo)
+```
+
+(ref:vertical) Complex EOF and traditional EOF.
+
+```{r vertical}
+ceof |> 
+  # cut(2) |> 
+  _$right |> 
+  sep_ReIm() |> 
+  ggplot(aes(qbo, lev)) +
+  geom_path(aes(color = part)) +
+  scale_x_continuous("complex EOF QBO") +
+  scale_level   +
+  
+  
+  eof$right |> 
+  ggplot(aes(qbo, lev)) +
+  geom_path(aes(color = PC)) +
+  scale_x_continuous("EOF QBO") +
+  scale_level  
+```
+
+Figure \@ref(fig:vertical) compares the complex EOF representation of the QBO with the "two EOF" version.
+Each line represents the two orthogonal phases whose linear combination is the complete wave.
+
+A more intuitive illustration is Figure \@ref(fig:phases), which shows the shape of the reconstructed wind anomalies at each phase of the QBO.
+
+(ref:phases) Wind anomaly reconstruction using complex EOF and regular EOF considering a path through an unit circle in complex space. 
+
+```{r phases}
+ceof_phase <- copy(ceof)
+mean_mod <- ceof$left[, Mod(qbo)] |> 
+  mean()
+
+ceof_phase$left <- data.table(phase = seq(0, 360, length.out = 40)) |> 
+  _[, qbo := mean_mod*exp(1i*phase*pi/180)] |> 
+  _[, PC := "PC1"]
+
+
+eof_phase <- copy(eof)
+
+mean_mod <- eof$left |> 
+  dcast(time ~ PC, value.var = "qbo") |> 
+  _[, mean(sqrt(PC1^2 + PC2^2))]
+
+eof_phase$left <- data.table(phase = seq(0, 360, length.out = 40)) |> 
+  _[, qbo := mean_mod*exp(1i*phase*pi/180)] |> 
+  eliotesis::sep_ReIm() |> 
+  _[, part := forcats::fct_recode(part, PC1 = "Real", PC2 = "Imaginario")] |> 
+  setnames("part", "PC")
+
+
+rbind(ceof = predict(ceof_phase),
+      eof = predict(eof_phase), 
+      idcol = "method") |> 
+  _[, qbo := Re(qbo)/sd(Re(qbo)), by = .(method)] |> 
+  ggplot(aes(phase, lev))+ 
+  geom_contour_fill(aes(z = Re(qbo), fill = ..level..), breaks = AnchorBreaks(exclude = 0)) +
+  scale_fill_divergent_discretised(NULL) +
+  scale_y_level(labels = \(x) paste0(x, "hPa")) +
+  scale_x_reverse("QBO phase", breaks = seq(0, 360, by = 30), 
+                  labels = \(x) paste0(x, "º"), expand = c(0, 0))  +
+  facet_grid(~ method)
+```
+
+This makes it more clear how these indices can represent this propagating mode.
+In the 360º/0º phase, winds are westerly with a maximum at around 5hPa and the easterly anomalies are starting to rear their head at the top of the stratosphere.
+As the phase advances clockwise, both the westerly and the easterly anomalies propagate downward.
+The westerly winds get to the 30hPa level at around the 240º phase, which would indicate the maximum of the "westerly QBO".\
+The maximum of the "easterly QBO" is around the 60º phase.
+
+The only noticeable difference between the methods is that the EOF-based QBO signal seems to have more amplitude in the upper stratosphere.
+This is more evident by looking at the QBO amplitude as shown in Figure \@ref(fig:amplitude).
+This is defined as the modulo of the complex EOF and as $\sqrt{PC1^2 + PC2^2}$ in the normal EOF case.
+
+(ref:amplitude) Amplitude of the complex EOF and pseudo-amplitude of the EOF analysis (defined as $\sqrt{PC1^2 + PC2^2}$).
+
+```{r amplitude}
+rbind(eof = eof$right |>
+        dcast(lev ~ PC, value.var = "qbo") |> 
+        _[, .(lev, mod = sqrt(PC1^2 + PC2^2))],
+      ceof = ceof$right |> 
+        _[, .(lev, mod = Mod(qbo))],
+      idcol = "method"
+) |> 
+  ggplot(aes(mod, lev)) +
+  geom_path(aes(color = method)) +
+  scale_level
+```
+
+The amplitude can also be computed in the time series.
+This is something that can't really be done using an univariate index and which tells us how strong the QBO was at a particular point in time.
+
+```{r}
+eof_mod <- eof$left |> 
+  dcast(time ~ PC, value.var = "qbo") |> 
+  _[, mod := sqrt(PC1^2 + PC2^2)] |> 
+  _[, .(time, mod)]
+
+ceof_mod <- ceof$left |> 
+  copy() |> 
+  _[, mod := Mod(qbo)] |> 
+  _[, .(time, mod)]
+
+mods <- rbind(ceof = ceof_mod,
+              eof = eof_mod, 
+              idcol = "method")
+
+```
+
+(ref:amplitude-clim) Seasonal cycle of the time amplitude of the complex EOF and normal EOF. 
+
+```{r amplitude-clim}
+mods |> 
+  copy() |> 
+  _[, mod := mod/sd(mod), by = .(method)] |> 
+  _[, month := lubridate::month(time, label = TRUE)] |> 
+  ggplot(aes(month, mod)) +
+  geom_boxplot(aes(color = method)) +
+  geom_line(data = \(x) x[, .(mod = median(mod)), by = .(month, method)],
+            aes(color = method, group = method))
+```
+
+So, for example, we can look at the seasonality of the QBO amplitude.
+Is the QBO more active in particular months of the year?
+Figure \@(ref:amplitude-clim) shows that the answer depends on he index.
+The complex EOF amplitude has a moderate seasonality with maximum amplitude between March and June with a secondary maximum in October.
+In the normal EOF, the seasonality is much weaker compared with the interannual variability, which is particularly larger fo June--August
+
+(ref:amplitude-time) Time series of normalised amplitude anomaly of the complex EOF and normal EOF.
+
+```{r amplitude-time}
+mods |> 
+  copy() |> 
+  _[, mod := mod - mean(mod), by = .(month(time), method)] |> 
+  _[, mod := mod/sd(mod), by = .(method)] |> 
+  ggplot(aes(time, mod)) +
+  annotate("rect", 
+           xmin = as.POSIXct("2015-01-01"), xmax = as.POSIXct("2016-12-31"),
+           ymin = -Inf, ymax = Inf,
+           alpha = 0.2) +
+  geom_line(aes(color = method)) +
+  geom_smooth(aes(color = method), se = FALSE, span = 20*12/nrow(ceof_mod), method = "loess") 
+```
+
+Looking at the full time series, Figure \@ref(fig:amplitude-time) plots the standardised amplitude anomalies computed with each method as described above.
+The long term trend (or lack thereof) is very similar with both methods, as is the overall variability.
+There are some differences.
+
+In 2015--2016 the QBO was disrupted, with easterly winds suddenly replacing the expected westerlies[@newman2016].
+This event is very well captured by the complex EOF amplitude, showing one of the lowest values on record.
+The EOF-based amplitude, on the other hand, doesn't seem to capture it.
+
+The most striking feature of this plot seem to be that dip in the 50s and 60s, which is much more pronounced in the complex EOF index.
+Not only that, but there's something strange going on with the EOF-based index around 1954, where the amplitude jumps up to almost record levels while the complex EOF index stays at the general low levels of that decade.
+
+We can check what was going on in that decade looking at the actual zonal wind anomalies (Fig. \@ref(fig:wind-anomalies-zoom)).
+
+(ref:wind-anomalies-zoom) Hovmoller of zonal mean zonal wind anomalies. 
+
+```{r wind-anomalies-zoom}
+u_mean |> 
+  ggplot(aes(time, lev)) +
+  geom_contour_fill(aes(z = u_a, fill = ..level..), breaks= AnchorBreaks(exclude = 0)) +
+  # geom_contour2(aes(z = u_a), data = u_mean) +
+  scale_fill_divergent_discretised(NULL) +
+  scale_x_datetime(expand = c(0, 0)) +
+  scale_y_level(limits = c(100, NA)) +
+  ggforce::facet_zoom(x = time %between% as.POSIXct(c("1940-01-01", "1965-12-31"), tz = "GMT")) +
+  theme(strip.background = theme_gray()$strip.background)
+```
+
+It looks like in the 50s and 60s the usual vertical propagation of wind anomalies was severely disturbed.
+Instead of vertical propagation, there's almost a dipole of positive and negative wind anomalies between the upper and lowe stratosphere.
+Looking at the broader picture, it also looks like the QBO was faster in the 40s then in the modern period.
+As it's always the case with these data, it's very possible that this is a problem with the reanalysis.\
+I don't think there were a lot of good stratospheric observations in those years and from what I know, models are not great at simulating the QBO.
+Someone with more expertise in tropical meteorology could probably interpret this better.
+
+Whether the changes in the 40s, 50s and 60s are real or not, they are real in the data.
+The complex EOF reconstruction looks like Figure \@ref(fig:ceof-reconstruction).
+
+(ref:ceof-reconstruction) Same hovmoller as before but of the zonal mean zonal wind anomalies reconstructed by the complex EOF description. 
+
+```{r ceof-reconstruction}
+last_plot() %+% (ceof |> 
+                   predict() |> 
+                   _[, u_a := Re(qbo)])
+```
+
+During the "tumultuous" period, the complex EOF index detects almost no QBO (something that Figure \@ref(fig:amplitude-time) already shows).
+
+(ref:eof-reconstruction) Same hovmoller as before but of the zonal mean zonal wind anomalies reconstructed by the traditional EOF description. 
+
+```{r eof-reconstruction}
+last_plot() %+% (eof |> 
+                   predict() |> 
+                   _[, u_a := Re(qbo)])
+```
+
+The reconstruction using EOF (Fig. \@ref(fig:eof-reconstruction)) is quite different.
+During the tumultuous period there is also a decrease in amplitude, but we can see that weird spike in amplitude around 1954 as a very strong dipole that then disappears.
+This is clearly not a downward-propagating pattern, but the EOF-based analysis captured it as a very strong QBO event anyway.
+More generally, the overall patterns look a bit less organised --more "noisy"-- than the complex EOF reconstruction.
+
+The reason the complex EOF "recognises" that the dipole is not the QBO is the time complex transformation.
+The problem with that is that it need information "from the future" to know that, so that it's challenging to create an operational index based con complex EOF in the time domain.
+
+We can look at the phase evolution of the QBO.
+
+(ref:trajectories) Trajectories of the complex EOF and EOF-based QBO indices. 
+
+```{r trajectories}
+ceof$left |> 
+  # dcast(time ~ PC) |> 
+  sep_ReIm(format = "wider") |>
+  ggplot(aes(Real, Imaginary)) +
+  geom_path() +
+  coord_equal() +
+  
+  eof$left |> 
+  dcast(time ~ PC) |> 
+  # sep_ReIm(format = "wider") |> 
+  ggplot(aes(PC1, PC2)) +
+  geom_path() +
+  coord_equal()
+```
+
+Figure \@ref(fig:trajectories) plots the trajectories of each part of the complex EOF and the PC1--PC2 space in the normal EOF.
+It's hard to get anything from this figure, really, but to me the complex EOF does look more tidy.
+
+Finally we can look at the periodicity of the QBO using these indices.
+
+(ref:period) Periodogram of the complex-valued QBO indices where the normal EOF is converted to complex space as $PC1 + iPC2$.
+
+```{r period}
+rbind(ceof = ceof$left |> 
+        _[order(-time)] |> 
+        _[, .(time, qbo)],
+      eof = eof$left |> 
+        dcast(time ~ PC, value.var = "qbo") |> 
+        _[, qbo := complex(real = PC1, imaginary = PC2)] |> 
+        _[, .(time, qbo)],
+      idcol = "method"
+) |> 
+  _[, spec.pgram(qbo, spans = c(3, 9, 11), plot = FALSE)[c("freq", "spec")], by = .(method)] |> 
+  _[, pwr := spec*freq] |> 
+  _[, spec := spec/sum(spec*c(0, diff(freq))), method] |> 
+  ggplot(aes(freq, spec*freq)) +
+  geom_vline(xintercept = c(1/28), color = "gray", linetype = 2) +
+  geom_line(aes(color = method)) +
+  scale_x_log10("Frequency (1/month)", guide = "axis_logticks",
+                sec.axis = sec_axis(~1/., name = "Period (month)",
+                                    breaks = c(365, 183, 80, 30, 14, 5))) +
+  scale_y_continuous("Power x Frequency") +
+  coord_cartesian(xlim = c(0.5e-3, NA))
+
+```
+
+In Figure \@ref(fig:period) I'm computing the periodogram of the complex-valued EOF, which I constructed as $PC1 + iPC2$ for the regular EOF.
+The complex EOF period is very well defined at around 28 months. 
+The EOF period, on the other hand, is kind of a mess. 
+
+I do get a better behaved period if I compute the periodogram of each individual EOF like in Figure \@ref(fig:period2), but even then the complex EOF period is a bit more sharp. 
+I don't know what it would mean to have two periodograms for the QBO, though. 
+
+(ref:period2) Periodogram of the complex EOF and periodograms of each individual PC of the normal EOF. 
+
+```{r period2}
+rbind(ceof = ceof$left |> 
+        _[order(-time)] |> 
+        _[, .(time, qbo, PC = "complex")],
+      eof = eof$left |> 
+        # dcast(time ~ PC, vperiod2alue.var = "qbo") |>
+        # _[, qbo := complex(real = PC1, imaginary = PC2)] |>
+        _[, .(time, qbo, PC)],
+      idcol = "method"
+) |> 
+  _[, spec.pgram(qbo, spans = c(3, 9, 11), plot = FALSE)[c("freq", "spec")], by = .(PC)] |> 
+  _[, pwr := spec*freq] |> 
+  _[, spec := spec/sum(spec*c(0, diff(freq))), PC] |> 
+  ggplot(aes(freq, spec*freq)) +
+  geom_vline(xintercept = c(1/28), color = "gray", linetype = 2) +
+  geom_line(aes(color = PC)) +
+  scale_x_log10("Frequency (1/month)", guide = "axis_logticks",
+                sec.axis = sec_axis(~1/., name = "Period (month)",
+                                    breaks = c(365, 183, 80, 30, 14, 5))) +
+  scale_y_continuous("Power x Frequency") +
+  coord_cartesian(xlim = c(0.5e-3, NA))
+```
+
+I started this analysis not expecting to find much if any difference between the two methods, but I was wrong. 
+The complex EOF analysis has some interesting good properties for studying the QBO. 
+There is one caveat, though. 
+The reason that the complex EOF is able to detect those disruptions in 2015 and in the 50s is because by computing the Hilbert transform in time, we are essentially combining information from the future. 
+But that means that this method cannot be used as an operational index. \*\*sad trombone\*\*

@@ -13,7 +13,18 @@ alterations. This is a place to organise those notes.
       <link>http://eliocamp.github.io/scrapbook</link>
     </image>
     <generator>Distill</generator>
-    <lastBuildDate>Mon, 29 Apr 2024 00:00:00 +0000</lastBuildDate>
+    <lastBuildDate>Tue, 18 Mar 2025 00:00:00 +0000</lastBuildDate>
+    <item>
+      <title>QBO using complex Empirical Orthogonal Functions</title>
+      <dc:creator>Elio Campitelli</dc:creator>
+      <link>http://eliocamp.github.io/scrapbook/posts/2025-03-11-qbo-ceof</link>
+      <description>QBO using complex Empirical Orthogonal Functions</description>
+      <category>ceof</category>
+      <category>qbo</category>
+      <guid>http://eliocamp.github.io/scrapbook/posts/2025-03-11-qbo-ceof</guid>
+      <pubDate>Tue, 18 Mar 2025 00:00:00 +0000</pubDate>
+      <media:content url="http://eliocamp.github.io/scrapbook/posts/2025-03-11-qbo-ceof/qbo-ceof_files/figure-html5/u-timeseries-1.png" medium="image" type="image/png" width="1248" height="768"/>
+    </item>
     <item>
       <title>An index for the MJO using complex Empirical Orthogonal Functions</title>
       <dc:creator>Elio Campitelli</dc:creator>

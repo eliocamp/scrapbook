@@ -45,6 +45,7 @@ library(metR)
 library(data.table)
 library(ggplot2)
 library(magrittr)
+library(patchwork)
 
 theme_set(theme_minimal() +
             theme(panel.background = element_rect(fill = "#fafafa", color = NA),
@@ -187,7 +188,10 @@ y <- sst[lat %~% -50 & lon %~% c(150, 100)] |>
   _[year(time) > 2000, pp_a :=  - `100`] |>
   _[, .(time, pp_a)]
 
-points <- annotate(x = c(150, 100), y = -50, geom = "point")
+points <- list(annotate(x = c(150, 100), y = -50,
+                        geom = "point", shape = c("+", "-"), size = 5),
+               annotate(x = c(150, 100), y = -50,
+                        geom = "point", size = 5, shape = 21))
 ```
 
 ```{r}
@@ -220,6 +224,7 @@ I implemented [DelSole] method in the lm2d package (which is very much not ready
 ```{r}
 model <- sst[pp, on = "time"] |> 
   na.omit() |> 
+  _[, t_a := t_a*sqrt(cos(lat*pi/180))] |>
   lm2d::lm2d(t_a ~ time | lon + lat, y = pp_a, 
              data = _)
 ```
@@ -228,47 +233,114 @@ The model used only `r model$summary$non_zero` principal components for the fit,
 
 ```{r}
 model$field |> 
-  plot_regr(pp_a)
+  plot_regr(pp_a/sqrt(cos(lat*pi/180))) +
+  sesabox
 ```
 
 This is very similar to the "point-wise" regression above. 
 The model statistic is also highly significant ($p.value `r scales::pvalue(model$summary$p.value)`$). 
 
 A limitation of this method is the use of Principal Components, which makes the whole regression field dependent on the domain. 
+The regular grid in longitude by latitude is also poor for computing Principal Components because each point represents different areas; this is solved by proper weighting of each gridpoint (ref), but it's a further complication. 
 There's also no guarantee that the Principal Component directions are the optimal directions to capture the relationship of interest. 
 For example, the regression field of the fake data is this: 
 
 ```{r}
 model <- sst[y, on = "time"] |> 
   na.omit() |> 
+  _[, .SD[sd(t_a) != 0], by = .(lon, lat)] |> 
+  _[, t_a := t_a*sqrt(cos(lat*pi/180))] |>
   lm2d::lm2d(t_a ~ time | lon + lat, y = pp_a, 
-             data = _, )
+             data = _)
 ```
 
 ```{r}
 model$field |> 
-  plot_regr(pp_a)
+  plot_regr(pp_a/sqrt(cos(lat*pi/180))) +
+  points
 ```
 
 Which is pretty much nonsense. 
+Here, no Principal Component is all that correlated with the target variable so the [DeSolde] method chooses only the first principal component, which is ENSO. 
 
-Interestingly, an alternative implementation of the [DeSolde] method that uses lasso regression to select the principal components does a much better job in this case: 
+I believe there is some way around it by further weighting the variables by their correlation with the target variable (inspired by Supervised Principal Regression (https://hastie.su.domains/Papers/spca_JASA.pdf)).
+But the result is still not great: 
 
 ```{r}
-model <- sst[y, on = "time"] |> 
+data <- sst[y, on = "time"] |> 
+  na.omit() |> 
+  _[, .SD[sd(t_a) != 0], by = .(lon, lat)]
+
+W <-  data |> 
+  _[, .(W = cor(pp_a, t_a, use = "complete.obs")^2), by = .(lon, lat)]
+
+model <- data[W, on = .NATURAL] |> 
+  _[, t_a := t_a*sqrt(cos(lat*pi/180))*W] |>
+  lm2d::lm2d(t_a ~ time | lon + lat, y = pp_a, 
+             data = _) 
+
+model$field[W, on = .NATURAL] |> 
+  plot_regr(pp_a/(sqrt(cos(lat*pi/180))*W)) +
+  points
+```
+
+
+Interestingly, an alternative implementation of the [DeSolde] method that uses lasso regression to select the principal components does a better job in this case: 
+
+```{r}
+sst[y, on = "time"] |> 
   na.omit() |> 
   lm2d::lm2d(t_a ~ time | lon + lat, y = pp_a, 
-             method = lm2d::fit_lasso(), 
-             data = _, )
+             method = lm2d::fit_lasso(),
+             data = _) |> 
+  _$field |>
+  plot_regr(pp_a) +
+  points
+```
+
+However, I'm not sure if the statistic derived by [DeSolde] is valid for this selection method.
+
+
+
+## LASSO
+
+So lasso regression works  well in Principal Component space, but why not use it in the original space?
+
+Well, I tried it and the results are not great: 
+
+```{r}
+LassoLM <- function(data, formula, value.var, y,
+                    kernel = "linear", ...) {
+  M <- metR:::.tidy2matrix(data, formula, value.var = value.var)
+  
+  res <- glmnet::cv.glmnet(M$matrix, y, ...)
+  
+  list(model = res,
+       coef = M$coldims[, estimate := as.vector(coef(res))[-1]][])
+}
 ```
 
 ```{r}
-model$field |> 
-  plot_regr(pp_a)
+model <- sst |> 
+  na.omit() |> 
+  LassoLM(time ~ lon + lat, value.var = "t_a", y = pp$pp_a, 
+          alpha = 1) 
+
+model$coef |> 
+  plot_regr() +
+  sesabox
 ```
 
-However, I'm not sure if the statistic derived by [DeSolde] is valid for this selection method. 
+As you can see, lasso essentially chose only three gridpoints and I suspect is pretty much overfitting even with the penalisation chosen by crossvalidation. 
 
+
+## Perceptron
+
+Yes, you read it right. 
+I had this idea a few year ago when taking a Machine Learning course. 
+The perceptron finds the hyperplane that separates two categories and an hyperplane can be defined as a direction in feature space, so why not look at that direction? 
+Here the task is not strictly lienar regression, but classification between positive and negative values of the target variable. 
+However, if the linear model holds, then that direction shoudl pretty close to the regression direction. 
 
 
 ```{r, PerceptronLm}
@@ -311,25 +383,34 @@ PerceptronLm <-  function(data, formula, value.var, y) {
 }
 ```
 
+The "perceptron regression" gives me this: 
+
 
 ```{r}
-# fit_cv <- lm2d:::fit_cv
-# lm2d_rege <- sst |> 
-#   lm2d::lm2d(t_a ~ year | lon + lat, y = pp$pp_a, method = "cv", data = _)
+(sst |> 
+   na.omit() |>
+   PerceptronLm(time ~ lon + lat, value.var = "t_a", y = pp$pp_a) |> 
+   plot_regr() +
+   labs(title = "Precipitation") +
+   sesabox) +
+  
+  (sst |> 
+     na.omit() |>
+     PerceptronLm(time ~ lon + lat, value.var = "t_a", y = y$pp_a) |> 
+     plot_regr() +
+     labs(title = "Fake data") +
+     points
+  )  +
+  plot_layout(ncol = 1)
 ```
 
-```{r}
-perceptron_reg <- sst |> 
-  na.omit() |>
-  PerceptronLm(year ~ lon + lat, value.var = "t_a", y = y$pp_a)
-```
+Which is, honestly, not too bad. 
+I don't think this has any real merit, but it works as a stepping stone for a more serious option
 
-```{r}
-perceptron_reg |> 
-  plot_regr() +
-  points
-```
+## Support Vector Machine
 
+Support Vector Machine (SVM) is similar to the perceptron and, when using a linear kernel, also returns an hyperplane that we can use as field regression. 
+The result is this:
 
 ```{r}
 SVM <- function(data, formula, value.var, y,
@@ -347,130 +428,156 @@ SVM <- function(data, formula, value.var, y,
 clean_data <- sst |> 
   na.omit() |>
   _[, .SD[sd(t_a) != 0], by = .(lon, lat)]
-svm_regr <- clean_data |> 
-  SVM(year ~ lon + lat, value.var = "t_a", y = y$pp_a, 
-      kernel = "linear", nu = 1e-4) 
 ```
 
 
 ```{r}
-svm_regr$coef |> 
-  plot_regr() +
-  points
+(
+  clean_data |> 
+    SVM(time ~ lon + lat, value.var = "t_a", y = pp$pp_a, 
+        kernel = "linear", nu = 1e-5) |> 
+    _$coef |> 
+    plot_regr() +
+    labs(title = "Precipitation") +
+    sesabox) +
+  
+  (clean_data |> 
+     SVM(time ~ lon + lat, value.var = "t_a", y = y$pp_a, 
+         kernel = "linear", nu = 1e-5) |> 
+     _$coef |> 
+     plot_regr()  +
+     labs(title = "Fake data") +
+     points
+  )  +
+  plot_layout(ncol = 1)
 ```
 
-```{r}
+Although when I say "the result", I'm lying a bit, because for nu-regression I need to chose a nu value. 
+I might be able to chose it based on crossvalidation, but the e1071 package I'm using to fit the SMV doesn't come with that out of the box and I'm not going to implement all that just for a blogpost. 
 
-svm_regr |> 
-  _[["model"]] |> 
-  with(data.table(fitted = fitted, 
-                  residuals = residuals)) |> 
-  cbind(y) |> 
-  ggplot(aes(year, pp_a)) +
-  geom_line() +
-  geom_line(aes(y = fitted), color = "red")
-```
+In any case, the results are also not terrible.
+The precipitation example seems to exaggerate higher latitude features compared with gridpoint-wise regression, but since there is no ground truth, that very well could be an issue with the latter method.
+The fake data example is pretty neat as it recovers basically what would be expected. 
+
+You could also use SVM in Principal Component space: 
 
 
-```{r}
-M <- sst |>
-  na.omit() |>
-  _[, .SD[sd(t_a) != 0], by = .(lon, lat)] |>
-  metR:::.tidy2matrix(year ~ lon + lat, value.var = "t_a")
-```
-
-
-Sparse Partial Least Squares
+## Sparse Partial Least Squares
 
 In principle this method 
 
 ```{r}
-model <- spls::spls(M$matrix, pp$pp_a,
-                    eta = 0.8,
-                    K = 2,
-                    select = "pls2")
-
-lapply(model$betamat, \(mat) {
-  M$coldims |> 
-    copy() |> 
-    _[, estimate := as.vector(mat)] 
-}) |> 
-  rbindlist(idcol = "coef") |> 
-  _[, estimate := estimate/sd(estimate), by = coef] |> 
-  plot_regr() +
-  facet_wrap(~ coef)
-
+SPLSLm <- function(data, formula, value.var, y,
+                   kernel = "linear", ...) {
+  M <- metR:::.tidy2matrix(data, formula, value.var = value.var)
+  
+  
+  model <- spls::spls(M$matrix, y, ...)
+  
+  betas <- lapply(model$betamat, \(mat) {
+    M$coldims |> 
+      copy() |> 
+      _[, estimate := as.vector(mat)] 
+  }) |> 
+    rbindlist(idcol = "coef") 
+  
+  list(model = model, 
+       beta = betas,
+       coef = M$coldims |> 
+         copy() |> 
+         _[, estimate := coef(model)])
+}
 ```
 
 ```{r}
-model <- spls::spls(M$matrix, pp$pp_a,
-                    eta = 0.8,
-                    K = 5,
-                    select = "pls2")
-
-lapply(model$betamat, \(mat) {
-  M$coldims |> 
-    copy() |> 
-    _[, estimate := as.vector(mat)] 
-}) |> 
-  rbindlist(idcol = "coef") |> 
-  _[, estimate := estimate/sd(estimate), by = coef] |> 
-  plot_regr() +
-  facet_wrap(~ coef)
-
+model <- clean_data |> 
+  SPLSLm(time ~ lon + lat, value.var = "t_a", y = y$pp_a, 
+         eta = 0.5, K = 2)
 ```
 
-
 ```{r}
-eof <- sst |> 
+model$beta |> 
   copy() |> 
-  na.omit() |> 
-  _[, eof := t_a*sqrt(cos(lat*pi/180))] |>
-  EOF(eof ~ lat + lon | year, 
-      n = 1:60, 
-      data = _)
+  plot_regr() + 
+  facet_wrap(~ coef) 
 ```
 
 ```{r}
-M <- eof$right |> 
-  metR:::.tidy2matrix(year ~ PC, value.var = "eof")
-
-model <- spls::spls(M$matrix, y$pp_a,
-                    eta = 0.1,
-                    K = 5,
-                    select = "pls2")
-
-coefs <- lapply(model$betamat, \(mat) {
-  M$coldims |> 
-    copy() |> 
-    _[, estimate := as.vector(mat)] 
-}) |> 
-  rbindlist(idcol = "coef") 
-
-coefs |> 
+model$beta |> 
   copy() |> 
-  _[, estimate := estimate/sd(estimate), by = coef] |>
-  ggplot(aes(PC, estimate)) +
-  geom_col() +
-  facet_wrap(~ coef)
+  _[clean_data, on = .NATURAL, allow.cartesian = TRUE] |> 
+  _[, .(pred = sum(estimate * t_a)), by = .(coef, time)] |> 
+  _[pp, on = "time"] |> 
+  _[, cor(pred, pp_a)^2, by = .(coef, year(time) < 2000)] |> 
+  dcast(coef ~ year)
+  
+```
 
-coefs |> 
-  merge(eof$left, allow.cartesian	= TRUE) |>
-  _[, .(estimate = sum(estimate*eof)), by = .(lon, lat, coef)] |>
-  _[, estimate := estimate/sd(estimate), by = coef] |>
-  plot_regr() +
+
+```{r}
+model <- clean_data |> 
+  SPLSLm(time ~ lon + lat, value.var = "t_a", y = pp$pp_a, K = 3)
+```
+
+```{r}
+model$beta |> 
+  copy() |> 
+  _[, estimate := estimate/sd(estimate), by = .(coef)] |> 
+  plot_regr() + 
+  facet_wrap(~ coef, ncol = 1) 
+```
+
+```{r}
+model$beta |> 
+  copy() |> 
+  _[clean_data, on = .NATURAL, allow.cartesian = TRUE] |> 
+  _[, .(pred = sum(estimate * t_a)), by = .(coef, time)] |> 
+  _[pp, on = "time"] |> 
+  ggplot(aes(pp_a, pred)) +
+  geom_point() +
   facet_wrap(~ coef)
+```
+
+## CCA
+
+```{r}
+CCALm <- function(data, formula, value.var, y, ...) {
+  M <- metR:::.tidy2matrix(data, formula, value.var = value.var)
+  
+  
+  browser()
+  
+  
+  model <- spls::spls(M$matrix, y,
+                      eta = 0.8, ...,
+                      select = "pls2")
+  
+  betas <- lapply(model$betamat, \(mat) {
+    M$coldims |> 
+      copy() |> 
+      _[, estimate := as.vector(mat)] 
+  }) |> 
+    rbindlist(idcol = "coef") 
+  
+  list(model = model, 
+       beta = betas,
+       coef = M$coldims |> 
+         copy() |> 
+         _[, estimate := coef(model)])
+}
+
 
 ```
 
 ```{r}
-eof$left |> 
-  copy() |> 
-  setnames("eof", "estimate") |> 
-  _[as.numeric(PC) < 6] |> 
-  plot_regr() +
-  facet_wrap(~PC)
+model <- clean_data |> 
+  CCALm(time ~ lon + lat, value.var = "t_a", y = pp$pp_a)
 ```
+
+```{r}
+CCA::rcc()
+```
+
 
 LARS
 
