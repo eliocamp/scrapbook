@@ -1,0 +1,169 @@
+---
+title: "Emergent constrains"
+description: An early exploration of using cEOF to characterise the Maden-Julian Oscillation.
+author:
+  - name: Elio Campitelli
+    url: https://eliocamp.github.io/
+    affiliation: Securing Antarctica’s Environmental Future, Monash University, Australia
+    affiliation_url: https://arcsaef.com/
+date: "2024-04-29"
+slug: mjo-ceof
+categories:
+  - ceof
+  - mjo
+output: 
+  distill::distill_article: 
+    self_contained: FALSE
+    pandoc-args: "--wrap=none"
+bibliography: bibliography.bib
+compare_updates_url: https://github.com/eliocamp/scrapbook/blob/main/_posts/2024-04-18-MJO-RMM/mjo-rmm.Rmd
+link-citations: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(code_folding = FALSE, 
+                      echo = FALSE, 
+                      cache = TRUE, 
+                      cache.extra = 3, 
+                      fig.width = 8,
+                      fig.align = "center")
+knitr::knit_hooks$set(crop = knitr::hook_pdfcrop)
+
+knitr::opts_hooks$set(label = function(options) {
+  if (is.null(options$fig.cap)) {
+    options$fig.cap <- paste0("(ref:", options$label, "-cap)")
+  }
+  
+  if (is.null(options$fig.alt)) {
+    options$fig.alt <- paste0("(ref:", options$label, "-alt)")
+  }
+  options
+})
+
+library(metR)
+library(data.table)
+library(ggplot2)
+library(patchwork)
+theme_set(theme_minimal() +
+            theme(panel.background = element_rect(fill = "#fafafa", color = NA),
+                  legend.position = "bottom",
+                  legend.title.position = "top", 
+                  legend.title = element_text(hjust = 0.5),
+                  legend.frame = element_rect(color = "black", linewidth = 0.4),
+                  legend.key.height = unit(0.75, "lines")
+            ))
+wide_legend <- theme(legend.key.width = unit(1, 'null'))
+
+
+```
+
+
+```{r}
+cmip6 <- "cmip6_model_data_table.csv" |> 
+  fread() |> 
+  janitor::clean_names() |> 
+  _[, .(id = interaction(model, centre, run_id), 
+        historical_feb = si_ahist_feb_mkm2, change_feb = d_sia_ssp585_feb_mkm2,
+        historical_sep = si_ahist_sep_mkm2,  change_sep = d_sia_ssp585_sep_mkm2)] 
+
+
+cmip5 <- "cmip5_model_data_table.csv" |> 
+  fread() |> 
+  janitor::clean_names() |> 
+  _[, .(id = interaction(model, centre, run_id), 
+        historical_feb = si_ahist_feb_mkm2, change_feb = d_sia_rcp85_feb_mkm2,
+        historical_sep = si_ahist_sep_mkm2, change_sep = d_sia_rcp85_sep_mkm2)]
+
+models <- rbind(CMIP6 = cmip6, CMIP5 = cmip5, idcol = "model") |> 
+  melt(id.vars = c("model", "id")) |> 
+  _[, c("variable", "month") := tstrsplit(variable, split = "_")] |>
+  dcast(id + model + month ~ variable, value.var = "value") |> 
+  _[, future := change + historical]
+```
+
+A few weeks ago I participated in the [ICTP Summer School and Workshop on Polar Climates](https://indico.ictp.it/event/10498/) and one of the lecturers mentioned [this paper](https://agupubs.onlinelibrary.wiley.com/doi/10.1029/2021GL097413) on emergent constrains on Antarctic Sea Ice projections. 
+
+The background is that climate models suck at simulating Antarctic Sea Ice. 
+Most of them simulate retreat in the historical record that hasn't been observed and they have huge biases in the mean state, with some models simulating an almost ice-free Southern Ocean or a gigantic ice pack roughly 150% the observed size. 
+But we still need Antarctic Sea Ice projections so let's try to make the most of what we have and try to someone select or weight models that are better at simulating the observed Antarctic Sea Ice and use that to better constrain future projections. 
+
+
+
+
+```{r}
+models |>   
+  melt(id.vars = c("id", "model", "month", "historical")) |> 
+  ggplot(aes(historical, value)) +
+  # geom_abline(slope = -1) +
+  geom_point(aes(color = model), size = 2) +
+  geom_smooth(method = "lm", aes(color = model, fill = model), 
+              alpha = 0.15,
+              show.legend = FALSE) +
+  
+  ggpmisc::stat_correlation(ggpmisc::use_label("R2", 
+                                               other.mapping = aes(color = model)),
+                            label.x = "right", vstep = 0.1) +
+  scale_color_manual(NULL, aesthetics = c("color", "fill"),
+                     values = c(CMIP5 = "#fd0000", CMIP6 = "#0000ee")) +
+  scale_x_continuous("Historical Sea Ice Area") +
+  scale_y_continuous(NULL, expand = expansion(c(0.05, 0.25), c(0, 0))) +
+  facet_grid(variable ~ month, scales = "free",
+             switch = "y", 
+             labeller = labeller(month = c(feb = "February",
+                                           sep = "September"),
+                                 variable = c(change = "Change in sea ice area",
+                                              future = "Future sea ice area"))) +
+  theme(strip.placement = "outside") +
+  tagger::tag_facets()
+```
+
+https://www.nature.com/articles/s41586-021-03261-4
+
+
+```{r}
+sim_timeseries <- function(t) {
+  list(t = seq(t), 
+       sic = sqrt((rnorm(t) + 10)^2))
+}
+set.seed(42)
+B <- 200
+N <- 200
+sims <- data.table(id = seq_len(B)) |> 
+  _[, sim_timeseries(N), by = id]
+```
+
+
+```{r}
+sims |> 
+  _[id %in% 1:3] |> 
+  ggplot(aes(t, sic)) +
+  geom_line(aes(group = id))+
+  facet_wrap(~id, ncol= 1)
+```
+
+
+```{r}
+sims[, .(hist = mean(sic[t < 100]),
+         delta = mean(sic[t >= 100]) - mean(sic[t < 100])),
+     by = id] |> 
+  ggplot(aes(hist, delta)) +
+  geom_point() +
+  geom_smooth(method = "lm") +
+  ggpmisc::stat_correlation(ggpmisc::use_label("R2"),
+                            label.x = "right", label.y = "top") +
+  labs(x = "Historical mean", y = "Change in mean")
+```
+
+
+```{r}
+sims[, .(hist = mean(sic[t < 100]),
+         delta = mean(sic[t >= 100])),
+     by = id] |> 
+  ggplot(aes(hist, delta)) +
+  geom_point() +
+  geom_smooth(method = "lm") +
+  ggpmisc::stat_correlation(ggpmisc::use_label("R2"),
+                            label.x = "right", label.y = "top") +
+  labs(x = "Historical mean", y = "Future mean")
+```
+

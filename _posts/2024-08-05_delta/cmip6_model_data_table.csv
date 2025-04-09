@@ -1,0 +1,39 @@
+# id: cmip6_model_data_table
+# title: Sea Ice Area climatologies and 21st century change in the CMIP5 and CMIP6 multi-model ensembles
+# summary: This dataset comprises summary statistics regarding historical and projected Southern Hemisphere total sea ice area (SIA) and 21st century global temperature change (dTAS), evaluated from the multi-model ensembles contributing to CMIP5 and CMIP6 (Coupled Model Intercomparison Project phases 5 and 6). The metrics are evaluated for two climatological periods (1979-2014 and 2081-2100) from a number of CMIP experiments; historical, and ScenarioMIP or RCP runs. These metrics were calculated to calculate projections of future Antarctic sea ice loss, and drivers of ensemble spread in this variable, for Holmes et al. (2022) "Antarctic sea ice projections constrained by historical ice cover and future global temperature change"
+# keywords: CMIP5, CMIP6, Climate Projections, Sea Ice
+# authors: Caroline Holmes https://orcid.org/0000-0002-3134-555X
+# institution: British Antarctic Survey
+# acknowledgement: Caroline Holmes was funded under as part of the British Antarctic Survey Polar Science for Planet Earth Programme and under NERC large grant NE/N01829X/1.
+# comment: This table contains the model name and modelling centre for each model in the analysis, the ensemble member ('RunID') and whether SIA was available pre-calculated as CMIP variable 'siareas' or was calculated by the author from variable 'siconc' ('source'). Other headers give the relevant variable name (sea ice area SIA and global mean surface temperature TAS; hist for historical and dSIA etc for future change) and the CMIP experiment from which data was taken. 'ECSexists' and 'TCRexists' indicate the availability of Equilibrium Climate Sensitivity (ECS) and Transient Climate Response (TCR) respectively. The details of the experiment protocol are given in O'Neill et al (2016):
+# : O'Neill, B. C., Tebaldi, C., Vuuren, D. P. V., Eyring, V., Friedlingstein, P., Hurtt, G., et al. (2016). The scenario model intercomparison project (ScenarioMIP) for CMIP6. Geoscientific Model Development, 9(9), 3461-3482. https://doi.org/10.5194/gmd-9-3461-2016
+# references: Holmes, C. R., Bracegirdle, T. J., Holland, P. R. (2022). Antarctic sea ice projections constrained by historical ice cover and future global temperature change. https://doi.org/10.1029/2021GL097413
+# license: http://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/
+Model,Centre,RunID,source,SIAhist Feb (Mkm2),dSIA ssp126 Feb (Mkm2),dSIA ssp245 Feb (Mkm2),dSIA ssp585 Feb (Mkm2),Exceedance year Feb ssp585,SIAhist Sep (Mkm2),dSIA ssp126 Sep (Mkm2),dSIA ssp245 Sep (Mkm2),dSIA ssp585 Sep (Mkm2),dTAS Ann ssp126 (deg C),dTAS Ann ssp245 (deg C),dTAS Ann ssp585 (deg C),ECSexists,TCRexists
+BCC-CSM2-MR,BCC,r1i1p1f1,siconc,0.344278604,-0.229810253,-0.258465692,-0.296101384,2020,12.76212215,-3.03663826,-4.153862953,-5.820560932,1.067529283,1.978227352,3.483470173,True,True
+CAMS-CSM1-0,CAMS,r1i1p1f1,siconc,0.008018177,-0.00363904,-0.005027856,-0.005704754,1954,13.81106377,-1.744997025,-3.253657341,-4.161070824,0.794302571,1.426896305,2.612399451,True,True
+FGOALS-f3-L,CAS,r1i1p1f1,siconc,0.288877845,-0.193581089,-0.174095616,-0.264060466,2046,14.26227474,-2.210123062,-1.818580627,-4.606259346,1.085887465,1.960906734,3.773049935,True,True
+CanESM5,CCCma,r1i1p1f1,siconc,3.953030109,-0.640501022,-1.574933767,-3.305443168,>2100,17.84834862,-1.020786285,-2.510343552,-7.031597137,1.875973734,3.210690908,6.013328041,True,True
+CNRM-CM6-1,CNRM-CERFACS,r1i1p1f2,siareas,0.986775637,-0.62730965,-0.848144278,-0.979047148,2068,17.64448357,-2.738778114,-4.929189682,-10.48954582,1.459665108,2.479715236,4.899576537,True,True
+CNRM-CM6-1-HR,CNRM-CERFACS,r1i1p1f2,siareas,0.552753091,-0.513410199,-0.547035833,-0.552315276,2048,16.0863781,-7.381763458,-10.61479521,-12.90146852,1.879720434,2.960688109,4.923933582,True,True
+ACCESS-ESM1-5,CSIRO,r1i1p1f1,siareas,2.196027994,-0.400204182,-0.803910255,-1.502353907,>2100,14.21571827,-0.494318008,-2.051641464,-4.99538517,1.51504866,2.489541245,4.146130037,True,True
+ACCESS-CM2,CSIRO-ARCCSS,r1i1p1f1,siareas,0.559622884,-0.300069064,-0.472405218,-0.527563132,2063,13.67536354,-2.484088898,-4.273479462,-6.710069656,2.064812006,2.976968929,5.02354033,True,True
+FIO-ESM-2-0,FIO-QLNM,r1i1p1f1,siconc,2.082577705,-0.852318645,-1.518073261,,,15.13683033,-2.156559944,-4.00884819,,1.216543516,2.33630823,,False,False
+INM-CM4-8,INM,r1i1p1f1,siareas,0.254335999,-0.023514122,-0.201572906,-0.251466332,2007,9.122918129,-0.626336098,-1.926464081,-3.829433441,0.79084015,1.583680138,3.080636836,True,True
+INM-CM5-0,INM,r1i1p1f1,siareas,0.964514017,-0.307890773,-0.574305624,-0.867135413,2079,11.97610092,-0.841108322,-2.18514061,-3.981431007,0.865540797,1.677046178,3.002260351,True,False
+IPSL-CM6A-LR,IPSL,r1i1p1f1,siareas,1.562333226,-0.387681365,-0.878926218,-1.358365297,2100,18.81619263,-1.547809601,-2.978507996,-6.46541214,1.465512964,2.749787402,5.146160763,True,True
+MIROC-ES2L,MIROC,r1i1p1f2,siconc,0.017766677,-0.010519399,-0.012122988,-0.015180412,1954,3.25543189,-0.481887102,-0.757690668,-1.225966692,1.116637364,1.960682353,3.527177745,True,True
+MIROC6,MIROC,r1i1p1f1,siconc,0.018102519,0.000575528,0.026085019,0.004797576,1954,3.347361565,0.091585636,0.157227993,-0.166351318,1.004543611,1.712649341,3.324732744,True,True
+UKESM1-0-LL,MOHC,r1i1p1f2,siconc,2.945912361,-0.840580225,-1.899406195,-2.741002798,2099,15.19785404,-1.133525848,-3.712342262,-7.367868423,2.309721566,3.644089368,6.154006852,True,True
+MPI-ESM1-2-HR,MPI-M,r1i1p1f1,siareas,0.373320431,-0.269051082,-0.300919101,-0.360924016,2040,13.1401453,-1.468816757,-1.705301285,-3.893500328,0.886296217,1.716732895,3.222135026,True,True
+MPI-ESM1-2-LR,MPI-M,r1i1p1f1,siareas,0.267305017,-0.068162143,-0.181605227,-0.237808246,2060,9.932927132,0.268586159,-1.841365814,-3.458451271,0.773553758,1.699182594,3.221811817,True,True
+MRI-ESM2-0,MRI,r1i1p1f1,siareas,2.648513794,-0.93302989,-1.597825766,-2.149371058,>2100,19.93362808,-2.718868256,-4.529039383,-7.725610733,1.214032396,2.176994961,3.867098303,True,True
+CESM2-WACCM,NCAR,r1i1p1f1,siareas,2.042724371,-1.401756883,-1.693848997,-1.987365551,2086,15.02662468,-3.707965851,-5.182071686,-8.610886097,1.745978627,2.609295456,5.025959877,True,True
+NorESM2-LM,NCC,r1i1p1f1,siconc,1.407016873,0.382308602,0.068795323,-0.35629189,>2100,11.24082947,0.693628311,0.122289658,-0.874616623,0.886385421,1.721841782,3.331727791,True,True
+NorESM2-MM,NCC,r1i1p1f1,siconc,1.428328037,0.051528692,-0.079393983,-0.483255982,>2100,12.05037212,0.446314812,-0.246056557,-1.15837574,1.005168561,1.786181814,3.460391172,False,False
+GFDL-ESM4,NOAA-GFDL,r1i1p1f1,siconc,0.662204325,-0.279086053,-0.363071293,-0.57037586,2090,16.10720444,-0.920841217,-2.207068443,-5.02586174,0.968200798,1.801314639,3.290998664,True,True
+NESM3,NUIST,r1i1p1f1,siconc,0.546198606,-0.150645912,-0.38199091,-0.512951825,2069,14.32501221,-1.618889809,-3.772468567,-6.485133171,1.444196256,2.388881116,4.520593972,True,True
+HadGEM3-GC31-LL,MOHC,r1i1p1f3,siconc,1.916536331,-0.989104092,-1.461186111,-1.870661594,2080,13.78867435,-2.572870255,-4.291460037,-7.994659424,2.298438646,3.38187612,5.767286401,True,True
+HadGEM3-GC31-MM,MOHC,r1i1p1f3,siconc,1.818350315,-1.765702844,,-1.815022337,2052,10.48133183,-6.093655586,,-8.588246346,2.363115369,,5.613466246,True,True
+CNRM-ESM2-1,CNRM-CERFACS,r1i1p1f2,siareas,0.443722844,,-0.417908439,,,14.88537979,,-6.132905006,,,2.541618731,,True,True
+GFDL-CM4,NOAA-GFDL,r1i1p1f1,siconc,0.556683421,,-0.455597237,-0.514633078,2054,18.34499931,,-3.765925407,-7.64882946,,2.428809101,4.233229666,True,True

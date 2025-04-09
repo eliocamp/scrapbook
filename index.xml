@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss xmlns:atom="http://www.w3.org/2005/Atom" xmlns:media="http://search.yahoo.com/mrss/" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:distill="https://distill.pub/journal/" version="2.0">
+  <channel>
+    <title>The Scrapbook</title>
+    <link>http://eliocamp.github.io/scrapbook</link>
+    <atom:link href="http://eliocamp.github.io/scrapbook/index.xml" rel="self" type="application/rss+xml"/>
+    <description>When reading papers I tend to replicate or re-run the analysis with small 
+alterations. This is a place to organise those notes. 
+</description>
+    <image>
+      <title>The Scrapbook</title>
+      <url>http://eliocamp.github.io/scrapbook/img/favicon.png</url>
+      <link>http://eliocamp.github.io/scrapbook</link>
+    </image>
+    <generator>Distill</generator>
+    <lastBuildDate>Mon, 29 Apr 2024 00:00:00 +0000</lastBuildDate>
+    <item>
+      <title>An index for the MJO using complex Empirical Orthogonal Functions</title>
+      <dc:creator>Elio Campitelli</dc:creator>
+      <link>http://eliocamp.github.io/scrapbook/posts/2024-04-18-MJO-RMM</link>
+      <description>An early exploration of using cEOF to characterise the Maden-Julian Oscillation.</description>
+      <category>ceof</category>
+      <category>mjo</category>
+      <guid>http://eliocamp.github.io/scrapbook/posts/2024-04-18-MJO-RMM</guid>
+      <pubDate>Mon, 29 Apr 2024 00:00:00 +0000</pubDate>
+      <media:content url="http://eliocamp.github.io/scrapbook/posts/2024-04-18-MJO-RMM/img/mjo.png" medium="image" type="image/png" width="1000" height="677"/>
+    </item>
+    <item>
+      <title>Stop using composites</title>
+      <dc:creator>Elio Campitelli</dc:creator>
+      <link>http://eliocamp.github.io/scrapbook/posts/2023-06-01-stop-composites</link>
+      <description>Composites are bad. Use regressions instead.</description>
+      <category>statistics</category>
+      <guid>http://eliocamp.github.io/scrapbook/posts/2023-06-01-stop-composites</guid>
+      <pubDate>Fri, 02 Jun 2023 00:00:00 +0000</pubDate>
+      <media:content url="http://eliocamp.github.io/scrapbook/posts/2023-06-01-stop-composites/stop-composites_files/figure-html5/composites1-1.png" medium="image" type="image/png" width="1536" height="864"/>
+    </item>
+    <item>
+      <title>Mini replication of "Subseasonal Vacillations in the [boreal] Winter Stratosphere"</title>
+      <dc:creator>Elio Campitelli</dc:creator>
+      <link>http://eliocamp.github.io/scrapbook/posts/2022-09-20-uwind-sinewave</link>
+      <description>Fun fitting a sine model</description>
+      <category>stratospheric circulation</category>
+      <guid>http://eliocamp.github.io/scrapbook/posts/2022-09-20-uwind-sinewave</guid>
+      <pubDate>Tue, 20 Sep 2022 00:00:00 +0000</pubDate>
+      <media:content url="http://eliocamp.github.io/scrapbook/posts/2022-09-20-uwind-sinewave/uwind-sinewave_files/figure-html5/timeseries-1.png" medium="image" type="image/png" width="1248" height="768"/>
+    </item>
+    <item>
+      <title>Comment on "A new zonal wave 3 index for the Southern Hemisphere"</title>
+      <dc:creator>Elio Campitelli</dc:creator>
+      <link>http://eliocamp.github.io/scrapbook/posts/2022-05-31-wave3-goyal</link>
+      <description>How to measure a wave that is not just a wave.</description>
+      <category>wave 3</category>
+      <category>general circulation</category>
+      <guid>http://eliocamp.github.io/scrapbook/posts/2022-05-31-wave3-goyal</guid>
+      <pubDate>Thu, 02 Jun 2022 00:00:00 +0000</pubDate>
+      <media:content url="http://eliocamp.github.io/scrapbook/posts/2022-05-31-wave3-goyal/distill-preview.png" medium="image" type="image/png" width="1248" height="768"/>
+    </item>
+    <item>
+      <title>Sources and impacts of the zonally asymmetric component of the Southern Annular Mode</title>
+      <dc:creator>Elio Campitelli</dc:creator>
+      <link>http://eliocamp.github.io/scrapbook/posts/2021-08-09-asymsam</link>
+      <description>Explanation of our recent paper on asymmetric and symmetric parts of the Southern Annular Mode.</description>
+      <category>SAM</category>
+      <category>ENSO</category>
+      <category>general circulation</category>
+      <guid>http://eliocamp.github.io/scrapbook/posts/2021-08-09-asymsam</guid>
+      <pubDate>Tue, 10 Aug 2021 00:00:00 +0000</pubDate>
+      <media:content url="http://eliocamp.github.io/scrapbook/posts/2021-08-09-asymsam/distill-preview.png" medium="image" type="image/png" width="471" height="471"/>
+    </item>
+    <item>
+      <title>Does the Southern Annular Mode exist?</title>
+      <dc:creator>Elio Campitelli</dc:creator>
+      <link>http://eliocamp.github.io/scrapbook/posts/2021-01-15-sam-symmetry</link>
+      <description>Scavenging the literature on the Southern Annular Mode I came across two papers from the early 2000's which seem to question whether this mode is actually a global phenomenon and not a statistical artifact.</description>
+      <category>SAM</category>
+      <category>statistics</category>
+      <category>general circulation</category>
+      <guid>http://eliocamp.github.io/scrapbook/posts/2021-01-15-sam-symmetry</guid>
+      <pubDate>Fri, 15 Jan 2021 00:00:00 +0000</pubDate>
+      <media:content url="http://eliocamp.github.io/scrapbook/posts/2021-01-15-sam-symmetry/distill-preview.png" medium="image" type="image/png" width="1248" height="768"/>
+    </item>
+    <item>
+      <title>The meridional structure of the Semiannual Oscillation</title>
+      <dc:creator>Elio Campitelli</dc:creator>
+      <link>http://eliocamp.github.io/scrapbook/posts/2021-01-15-sao-and-jet</link>
+      <description>How to filter out extra-tropical variabilty to highlight the structure of the Semiannual Oscillation using just multiple linear regression.</description>
+      <category>Semiannual Oscillation</category>
+      <category>general circulation</category>
+      <category>tropics</category>
+      <category>stratosphere</category>
+      <guid>http://eliocamp.github.io/scrapbook/posts/2021-01-15-sao-and-jet</guid>
+      <pubDate>Fri, 15 Jan 2021 00:00:00 +0000</pubDate>
+      <media:content url="http://eliocamp.github.io/scrapbook/posts/2021-01-15-sao-and-jet/distill-preview.png" medium="image" type="image/png" width="1248" height="768"/>
+    </item>
+    <item>
+      <title>ENSO and regression to the mean</title>
+      <dc:creator>Elio Campitelli</dc:creator>
+      <link>http://eliocamp.github.io/scrapbook/posts/2021-01-14-enso-and-regression-to-the-mean</link>
+      <description>How a recent paper published in Nature was pray to regression to the mean.</description>
+      <category>ENSO</category>
+      <category>statistics</category>
+      <guid>http://eliocamp.github.io/scrapbook/posts/2021-01-14-enso-and-regression-to-the-mean</guid>
+      <pubDate>Thu, 14 Jan 2021 00:00:00 +0000</pubDate>
+      <media:content url="http://eliocamp.github.io/scrapbook/posts/2021-01-14-enso-and-regression-to-the-mean/distill-preview.png" medium="image" type="image/png" width="1248" height="768"/>
+    </item>
+    <item>
+      <title>Analysis of "Global wave number-4 pattern in the southern subtropical sea surface temperature."</title>
+      <dc:creator>Elio Campitelli</dc:creator>
+      <link>http://eliocamp.github.io/scrapbook/posts/2021-01-14-wave4</link>
+      <description>A recent paper claims to have detected a global wave-4 pattern in subtropical SSTs. But have they really?</description>
+      <category>zonal waves</category>
+      <category>general circulation</category>
+      <guid>http://eliocamp.github.io/scrapbook/posts/2021-01-14-wave4</guid>
+      <pubDate>Thu, 14 Jan 2021 00:00:00 +0000</pubDate>
+      <media:content url="http://eliocamp.github.io/scrapbook/posts/2021-01-14-wave4/distill-preview.png" medium="image" type="image/png" width="960" height="403"/>
+    </item>
+  </channel>
+</rss>
