@@ -1,6 +1,7 @@
 ---
 title: "The Arctic might not be in a new regime"
 description: |
+  A paper claims the Arctic has entered a new regime, but it smells to much like the "hiatus". 
 author:
   - name: Elio Campitelli
     url: https://eliocamp.github.io/
