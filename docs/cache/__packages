@@ -8,6 +8,6 @@ stats
 metR
 data.table
 ggplot2
-magrittr
-rcdo
-ggforce
+grid
+gggrid
+forcats
