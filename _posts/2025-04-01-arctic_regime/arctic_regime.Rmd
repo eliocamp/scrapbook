@@ -1,7 +1,7 @@
 ---
 title: "The Arctic might not be in a new regime"
 description: |
-  A paper claims the Arctic has entered a new regime, but it smells to much like the "hiatus". 
+ A paper claims the Arctic has entered a new regime, but it smells to much like the "hiatus". 
 author:
   - name: Elio Campitelli
     url: https://eliocamp.github.io/
@@ -69,6 +69,7 @@ map <- list(
 
 scale_level <- scale_y_level(labels = \(x) paste0(x, "hPa"))
 ```
+
 
 ```{r}
 
@@ -257,6 +258,51 @@ summ$coefficients
 ```
 
 So the evidence for this "regime shift" is looking even weaker.
+
+Sea ice extent is a "2D" measure that doesn't take into account the thickness. 
+However, thickness is hard to observe, so we don't really have reliable observations spanning so many decades.
+We do have [PIOMAS](https://psc.apl.uw.edu/research/projects/arctic-sea-ice-volume-anomaly/data/), a model-based estimate of total sea ice volume. 
+It's not perfect (who is) but it's what we have. 
+
+In any case, does PIOMAS show a dramatic trend change in 2007? 
+Not really. Figure \@ref(fig:piomas) shows monthly Arctic sea ice volume anomalies with the usual broken linear trend. 
+
+```{r}
+piofile <- here::here("_data/arctic_regime/piomas.csv")
+
+if (!file.exists(piofile)) {
+  download.file("https://psc.apl.uw.edu/wordpress/wp-content/uploads/schweiger/ice_volume/PIOMAS.monthly.Current.v2.1.csv", piofile)
+  
+}
+
+piomas <- piofile |> 
+  fread() |> 
+  melt(id.vars = "year") |> 
+  _[, time := lubridate::make_date(year, variable)] |> 
+  _[, .(time, volume = value)] |> 
+  _[volume > 0] |> 
+  _[year(time) <= 2024]
+```
+
+(ref:piomas-cap) Arctic sea ice volume anomalies from PIOMAS with a linear discontinuous fit with breakpoint in 2007.
+
+```{r piomas}
+piomas |>
+  copy() |>
+  # _[month(time) == 9] |> 
+  # _[, .(volume = mean(volume)), by = year(time)] |> 
+  _[, volume := volume - mean(volume), by = month(time)] |> 
+  # _[time ]
+  # copy() |> 
+  ggplot(aes(time, volume)) +
+  geom_line() +
+  geom_smooth(method = "lm", aes(group = year(time) <= 2007)) +
+  scale_y_continuous("Monhtly sea ice volume anomaly") +
+  scale_x_date(NULL, date_breaks = "5 years", date_labels = "%Y")
+```
+
+After 2007 sea ice volume continued to decrease. 
+One could argue for a stabilisation after around 2010, but then the period is even shorter!
 
 ## Something did change in the Arctic
 
@@ -447,7 +493,7 @@ The fit works incredibly well!
 sim |> 
   _[, .(aice = weighted.mean(aice, cos(lat*pi/180))), by = .(time)] |> 
   _[, fit := predict(nls(aice ~ glf(time, t0, left, right, rate), 
-           start = list(t0 = median(time), left = max(aice),  right = min(aice), rate = -0.2)))] |> 
+                         start = list(t0 = median(time), left = max(aice),  right = min(aice), rate = -0.2)))] |> 
   ggplot(aes(time, aice)) +
   geom_line(aes(color = "Simulation")) +
   geom_line(aes(y = fit, color = "Fit")) +
@@ -466,7 +512,7 @@ arctic |>
   copy() |> 
   _[, .(aice = mean(aice)), by = .(year(time))] |> 
   _[, fit := predict(nls(aice ~ glf(year, t0, left, right, rate), 
-           start = list(t0 = median(year), left = max(aice),  right = min(aice), rate = -0.2)))] |> 
+                         start = list(t0 = median(year), left = max(aice),  right = min(aice), rate = -0.2)))] |> 
   ggplot(aes(year, aice)) +
   geom_line() +
   geom_line(aes(y = fit)) +
@@ -483,7 +529,7 @@ rmses <- arctic |>
   _[month(time) == 9] |> 
   _[, .(aice = mean(aice)), by = .(year(time))] |> 
   _[, fit := predict(nls(aice ~ glf(year, t0, left, right, rate), 
-           start = list(t0 = median(year), left = max(aice),  right = min(aice), rate = -0.2)))] |> 
+                         start = list(t0 = median(year), left = max(aice),  right = min(aice), rate = -0.2)))] |> 
   _[, period := year < 2006] |> 
   _[, fit2 := predict(lm(aice ~ year*period))] |> 
   _[, .(logistic_rmse = sd(aice - fit),
@@ -502,7 +548,7 @@ model <- arctic |>
   copy() |> 
   _[, .(aice = mean(aice)), by = .(year(time))] |> 
   _[, nls(aice ~ glf(year, t0, left, right, rate), 
-           start = list(t0 = median(year), left = max(aice),  right = min(aice), rate = -0.2))]
+          start = list(t0 = median(year), left = max(aice),  right = min(aice), rate = -0.2))]
 ```
 
 What does seem to require explanation is the fact that the rate of sea ice extent is slowing down far from zero.
@@ -537,7 +583,7 @@ t2m |>
   _[lat %in% c(50, 55, 60, 65, 70, 75, 80, 85, 90)] |> 
   _[, .(t2m = mean(t2m)), by = .(year(time), lat)] |>
   _[lat > 60, line := predict(nls(t2m ~ glf(year, t0, left, right, rate),  control = nls.control(maxiter = 100),
-                          start = list(t0 = 2002, left = min(t2m), right = max(t2m), rate = -0.2))), by = lat] |>
+                                  start = list(t0 = 2002, left = min(t2m), right = max(t2m), rate = -0.2))), by = lat] |>
   _[lat <= 60, line := predict(lm(t2m ~ year)), by = lat] |>
   ggplot(aes(year, t2m - 273.15)) +
   geom_line() +

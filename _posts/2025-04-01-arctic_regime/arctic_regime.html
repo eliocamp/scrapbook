@@ -143,7 +143,7 @@ code span.wa { color: #5e5e5e; font-style: italic; } /* Warning */
   <!--/radix_placeholder_rmarkdown_metadata-->
   
   <script type="text/json" id="radix-resource-manifest">
-  {"type":"character","attributes":{},"value":["arctic_regime_files/anchor-4.2.2/anchor.min.js","arctic_regime_files/bowser-1.9.3/bowser.min.js","arctic_regime_files/distill-2.2.21/template.v2.js","arctic_regime_files/figure-html5/anomalies-periods-1.png","arctic_regime_files/figure-html5/arctic-sep-1.png","arctic_regime_files/figure-html5/area-sep-fit-1.png","arctic_regime_files/figure-html5/climatologies-1.png","arctic_regime_files/figure-html5/extent-daily-1.png","arctic_regime_files/figure-html5/extent-monthly-1.png","arctic_regime_files/figure-html5/ice-melt-60-1.png","arctic_regime_files/figure-html5/sim--1.png","arctic_regime_files/figure-html5/sim-area-1.png","arctic_regime_files/figure-html5/sim-complex-1.png","arctic_regime_files/figure-html5/sim-fit-1.png","arctic_regime_files/figure-html5/temp-ice-regression-1.png","arctic_regime_files/figure-html5/temperature-1.png","arctic_regime_files/figure-html5/unnamed-chunk-16-1.png","arctic_regime_files/header-attrs-2.28/header-attrs.js","arctic_regime_files/jquery-3.6.0/jquery-3.6.0.js","arctic_regime_files/jquery-3.6.0/jquery-3.6.0.min.js","arctic_regime_files/jquery-3.6.0/jquery-3.6.0.min.map","arctic_regime_files/popper-2.6.0/popper.min.js","arctic_regime_files/tippy-6.2.7/tippy-bundle.umd.min.js","arctic_regime_files/tippy-6.2.7/tippy-light-border.css","arctic_regime_files/tippy-6.2.7/tippy.css","arctic_regime_files/tippy-6.2.7/tippy.umd.min.js","arctic_regime_files/webcomponents-2.0.0/webcomponents.js","bibliography.bib","img/fig1.jpg","img/S1.jpg"]}
+  {"type":"character","attributes":{},"value":["arctic_regime_files/anchor-4.2.2/anchor.min.js","arctic_regime_files/bowser-1.9.3/bowser.min.js","arctic_regime_files/distill-2.2.21/template.v2.js","arctic_regime_files/figure-html5/anomalies-periods-1.png","arctic_regime_files/figure-html5/arctic-sep-1.png","arctic_regime_files/figure-html5/area-sep-fit-1.png","arctic_regime_files/figure-html5/climatologies-1.png","arctic_regime_files/figure-html5/extent-daily-1.png","arctic_regime_files/figure-html5/extent-monthly-1.png","arctic_regime_files/figure-html5/ice-melt-60-1.png","arctic_regime_files/figure-html5/piomas-1.png","arctic_regime_files/figure-html5/sim--1.png","arctic_regime_files/figure-html5/sim-area-1.png","arctic_regime_files/figure-html5/sim-complex-1.png","arctic_regime_files/figure-html5/sim-fit-1.png","arctic_regime_files/figure-html5/temp-ice-regression-1.png","arctic_regime_files/figure-html5/temperature-1.png","arctic_regime_files/figure-html5/unnamed-chunk-16-1.png","arctic_regime_files/header-attrs-2.28/header-attrs.js","arctic_regime_files/jquery-3.6.0/jquery-3.6.0.js","arctic_regime_files/jquery-3.6.0/jquery-3.6.0.min.js","arctic_regime_files/jquery-3.6.0/jquery-3.6.0.min.map","arctic_regime_files/popper-2.6.0/popper.min.js","arctic_regime_files/tippy-6.2.7/tippy-bundle.umd.min.js","arctic_regime_files/tippy-6.2.7/tippy-light-border.css","arctic_regime_files/tippy-6.2.7/tippy.css","arctic_regime_files/tippy-6.2.7/tippy.umd.min.js","arctic_regime_files/webcomponents-2.0.0/webcomponents.js","bibliography.bib","img/fig1.jpg","img/S1.jpg"]}
   </script>
   <!--radix_placeholder_navigation_in_header-->
   <!--/radix_placeholder_navigation_in_header-->
@@ -1647,6 +1647,26 @@ before_2007TRUE      37.84963776 22.63858772  1.671908 0.101805048
 year:before_2007TRUE -0.01863607  0.01125737 -1.655456 0.105113541</code></pre>
 </div>
 <p>So the evidence for this “regime shift” is looking even weaker.</p>
+<p>Sea ice extent is a “2D” measure that doesn’t take into account the thickness.
+However, thickness is hard to observe, so we don’t really have reliable observations spanning so many decades.
+We do have <a href="https://psc.apl.uw.edu/research/projects/arctic-sea-ice-volume-anomaly/data/">PIOMAS</a>, a model-based estimate of total sea ice volume.
+It’s not perfect (who is) but it’s what we have.</p>
+<p>In any case, does PIOMAS show a dramatic trend change in 2007?
+Not really. Figure <a href="#fig:piomas">4</a> shows monthly Arctic sea ice volume anomalies with the usual broken linear trend.</p>
+<div class="layout-chunk" data-layout="l-body">
+
+</div>
+
+<div class="layout-chunk" data-layout="l-body">
+<div class="figure" style="text-align: center"><span style="display:block;" id="fig:piomas"></span>
+<img src="arctic_regime_files/figure-html5/piomas-1.png" alt="(ref:piomas-alt)" width="624" />
+<p class="caption">
+Figure 4: Arctic sea ice volume anomalies from PIOMAS with a linear discontinuous fit with breakpoint in 2007.
+</p>
+</div>
+</div>
+<p>After 2007 sea ice volume continued to decrease.
+One could argue for a stabilisation after around 2010, but then the period is even shorter!</p>
 <h2 id="something-did-change-in-the-arctic">Something did change in the Arctic</h2>
 <p>Now, there is some evidence for something fundamentally changing in the Arctic around 2007.
 The monthly time series after 2007 in Figure <a href="#fig:extent-monthly">3</a> does look weird; the variability is through the roof.
@@ -1656,22 +1676,22 @@ The reason is that the <em>seasonal cycle</em> changed significantly in 2007.</p
 <div class="figure" style="text-align: center"><span style="display:block;" id="fig:anomalies-periods"></span>
 <img src="arctic_regime_files/figure-html5/anomalies-periods-1.png" alt="(ref:anomalies-periods-alt)" width="624" />
 <p class="caption">
-Figure 4: Monthly Arctic sea ice extent anomalies with respect to two different climatologies. The orange line was computed using on the 2014–2024 climatology and the green line was computed using the 1990–2000 climatology.
+Figure 5: Monthly Arctic sea ice extent anomalies with respect to two different climatologies. The orange line was computed using on the 2014–2024 climatology and the green line was computed using the 1990–2000 climatology.
 </p>
 </div>
 </div>
-<p>Figure <a href="#fig:anomalies-periods">4</a> shows monthly sea ice extent anomalies computed either using the 1990–2000 climatology or the 2014–2024 climatology.
+<p>Figure <a href="#fig:anomalies-periods">5</a> shows monthly sea ice extent anomalies computed either using the 1990–2000 climatology or the 2014–2024 climatology.
 The difference is striking!
 Anomalies computed with the early climatology look fine until 2007 when they start to swing wildly.
 On the other hand, anomalies computed with the latter climatology look fine after 2007 but they swing before.
-Figure <a href="#fig:climatologies">5</a> shows those climatologies using daily values.
+Figure <a href="#fig:climatologies">6</a> shows those climatologies using daily values.
 The amplitude of the seasonal cycle is much greater in the latter decade and arguably even the shape is slightly different.</p>
 
 <div class="layout-chunk" data-layout="l-body">
 <div class="figure" style="text-align: center"><span style="display:block;" id="fig:climatologies"></span>
 <img src="arctic_regime_files/figure-html5/climatologies-1.png" alt="(ref:climatologies-alt)" width="624" />
 <p class="caption">
-Figure 5: Daily mean Arctic sea ice extent deviation from annual mean computed for the two same periods from Figure <a href="#fig:anomalies-periods">4</a>.
+Figure 6: Daily mean Arctic sea ice extent deviation from annual mean computed for the two same periods from Figure <a href="#fig:anomalies-periods">5</a>.
 </p>
 </div>
 </div>
@@ -1706,18 +1726,18 @@ But it will melt a proportion of what ice is there (that’s the first condition
 <div class="layout-chunk" data-layout="l-body">
 
 </div>
-<p>Under this conditions, ice subjected to a linear increase in temperature would evolve as shown in Figure <a href="#fig:ice-melt-60">6</a>, which is very much not linear.
+<p>Under this conditions, ice subjected to a linear increase in temperature would evolve as shown in Figure <a href="#fig:ice-melt-60">7</a>, which is very much not linear.
 In this model higher latitudes start to melt at different moments because their starting temperature is lower, so it takes more time for it to get above freezing.</p>
 
 <div class="layout-chunk" data-layout="l-body">
 <div class="figure" style="text-align: center"><span style="display:block;" id="fig:ice-melt-60"></span>
 <img src="arctic_regime_files/figure-html5/ice-melt-60-1.png" alt="(ref:ice-melt-60-alt)" width="624" />
 <p class="caption">
-Figure 6: Sea ice concentration at different latitudes simulated using the Equation <a href="#eq:model">(1)</a> a forcing temperature with a constant linear trend.
+Figure 7: Sea ice concentration at different latitudes simulated using the Equation <a href="#eq:model">(1)</a> a forcing temperature with a constant linear trend.
 </p>
 </div>
 </div>
-<p>When combining all latitudes to compute an integrated area, the final curve is looks like Figure <a href="#fig:sim-area">7</a>.
+<p>When combining all latitudes to compute an integrated area, the final curve is looks like Figure <a href="#fig:sim-area">8</a>.
 There’s an initial period of relative stability, as most regions are still to cold to experience melt, followed by period of rapid melt when the heat reaches most of the domain.
 Finally the rate of decrease starts to peter off as there is just too little ice to melt.</p>
 <div class="layout-chunk" data-layout="l-body">
@@ -1731,7 +1751,7 @@ Finally the rate of decrease starts to peter off as there is just too little ice
 <div class="figure" style="text-align: center"><span style="display:block;" id="fig:sim-area"></span>
 <img src="arctic_regime_files/figure-html5/sim-area-1.png" alt="(ref:sim-area-alt)" width="624" />
 <p class="caption">
-Figure 7: Mean sea ice concentration from the simplified model.
+Figure 8: Mean sea ice concentration from the simplified model.
 </p>
 </div>
 </div>
@@ -1743,25 +1763,25 @@ Y(t)=A+{K-A \over (C + Qe^{-Bt})^{1/\nu }}
 \]</span></p>
 <p>It has left and right asymptotes (A and K, respectively), a rate of increase/decrease (B) and other shape parameters that I’m not going to use (I’ll set <span class="math inline">\(C\)</span>, <span class="math inline">\(Q\)</span> and <span class="math inline">\(\nu\)</span> to 1).
 This is an S-shaped function that model the idea that the environment has a certain “carrying capacity” above which a species can’t grow.</p>
-<p>Figure <a href="#fig:sim-fit">8</a> shows the same simple simulation and the generalised logistic fit.
+<p>Figure <a href="#fig:sim-fit">9</a> shows the same simple simulation and the generalised logistic fit.
 The fit works incredibly well!</p>
 
 <div class="layout-chunk" data-layout="l-body">
 <div class="figure" style="text-align: center"><span style="display:block;" id="fig:sim-fit"></span>
 <img src="arctic_regime_files/figure-html5/sim-fit-1.png" alt="(ref:sim-fit-alt)" width="624" />
 <p class="caption">
-Figure 8: Mean sea ice concentration for the simple model with a Generalised Logistic Function fit.
+Figure 9: Mean sea ice concentration for the simple model with a Generalised Logistic Function fit.
 </p>
 </div>
 </div>
 <p>So this type of function is more statistically sound and has a robust physically motivation.
-It also fits the data very well, as can be seen in Figure <a href="#fig:area-sep-fit">9</a>.</p>
+It also fits the data very well, as can be seen in Figure <a href="#fig:area-sep-fit">10</a>.</p>
 
 <div class="layout-chunk" data-layout="l-body">
 <div class="figure" style="text-align: center"><span style="display:block;" id="fig:area-sep-fit"></span>
 <img src="arctic_regime_files/figure-html5/area-sep-fit-1.png" alt="(ref:area-sep-fit-alt)" width="624" />
 <p class="caption">
-Figure 9: Annual mean Arctic sea ice extent and a generalised logistic function fit.
+Figure 10: Annual mean Arctic sea ice extent and a generalised logistic function fit.
 </p>
 </div>
 </div>
@@ -1791,14 +1811,14 @@ Even if temperatures increase, they will be below freezing during the winter, cr
 <p>The fact that September Arctic SIE shows no trend during 2007–2024 may at first seem hard to explain.
 The Earth continues to warm, and the Arctic is warming faster than the global average.</p>
 </blockquote>
-<p>However, Figure <a href="#fig:temperature">10</a> shows annual mean zonal mean temperature at different latitudes.
+<p>However, Figure <a href="#fig:temperature">11</a> shows annual mean zonal mean temperature at different latitudes.
 Equatorward of 60° or so, the temperature increase has been fairly linear, but in the higher latitudes it also follows an S-shape function that hasn’t gone below freezing in most of the polar regions.</p>
 
 <div class="layout-chunk" data-layout="l-body">
 <div class="figure" style="text-align: center"><span style="display:block;" id="fig:temperature"></span>
 <img src="arctic_regime_files/figure-html5/temperature-1.png" alt="(ref:temperature-alt)" width="624" />
 <p class="caption">
-Figure 10: Zonal mean 2-metre temperature at different latitudes plus a generalised logistic fit for latitudes higher than 60° and a linear fit for latitudes lower than 60°.
+Figure 11: Zonal mean 2-metre temperature at different latitudes plus a generalised logistic fit for latitudes higher than 60° and a linear fit for latitudes lower than 60°.
 </p>
 </div>
 </div>
@@ -1815,19 +1835,19 @@ The result is that, sea ice decline slows down and remains relatively stable wel
 <div class="figure" style="text-align: center"><span style="display:block;" id="fig:sim-complex"></span>
 <img src="arctic_regime_files/figure-html5/sim-complex-1.png" alt="(ref:sim-complex-alt)" width="624" />
 <p class="caption">
-Figure 11: Mean sea ice concentrations form Equation <a href="#fig:sim-area">7</a> but forced with temperature following the functions fitted in <a href="#fig:temperature">10</a>.
+Figure 12: Mean sea ice concentrations form Equation <a href="#fig:sim-area">8</a> but forced with temperature following the functions fitted in <a href="#fig:temperature">11</a>.
 </p>
 </div>
 </div>
 <p>So has Arctic sea ice decline decelerated in recent years simply because temperature increase has decelerated in the Arctic?</p>
 <p>Maybe!</p>
-<p>Some evidence for this hypothesis is that even a simple linear regression model of zonal mean September sea ice concentration with zonal mean annual mean temperature at each latitude predicts the observed slowdown (Fig. <a href="#fig:temp-ice-regression">12</a>).</p>
+<p>Some evidence for this hypothesis is that even a simple linear regression model of zonal mean September sea ice concentration with zonal mean annual mean temperature at each latitude predicts the observed slowdown (Fig. <a href="#fig:temp-ice-regression">13</a>).</p>
 
 <div class="layout-chunk" data-layout="l-body">
 <div class="figure" style="text-align: center"><span style="display:block;" id="fig:temp-ice-regression"></span>
 <img src="arctic_regime_files/figure-html5/temp-ice-regression-1.png" alt="(ref:temp-ice-regression-alt)" width="624" />
 <p class="caption">
-Figure 12: Observed mean September sea ice concentration in green and mean September sea ice concentration predicted from a linear model on zonal mean 2-metre temperature at each latitude.
+Figure 13: Observed mean September sea ice concentration in green and mean September sea ice concentration predicted from a linear model on zonal mean 2-metre temperature at each latitude.
 </p>
 </div>
 </div>
