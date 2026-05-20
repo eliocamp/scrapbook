@@ -279,8 +279,8 @@ The reason is that the *seasonal cycle* changed significantly in 2007.
 ```{r anomalies-periods}
 arctic |> 
   copy() |> 
-  _[, Early := aice - mean(aice[year(time) %between% c(1990, 2000)], na.rm = TRUE), by = yday(time)] |>
-  _[, Late := aice - mean(aice[year(time) >= 2014], na.rm = TRUE), by = yday(time)] |>
+  _[, Early := aice - mean(aice[year(time) %between% c(1990, 2000)], na.rm = TRUE), by = month(time)] |>
+  _[, Late := aice - mean(aice[year(time) >= 2014], na.rm = TRUE), by = month(time)] |>
   _[, .(time, Early, Late)] |> 
   melt(id.vars = "time") |> 
   ggplot(aes(time, value)) +
