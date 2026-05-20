@@ -20,8 +20,9 @@
 
 <style type="text/css">code{white-space: pre;}</style>
 <style type="text/css" data-origin="pandoc">
+html { -webkit-text-size-adjust: 100%; }
 pre > code.sourceCode { white-space: pre; position: relative; }
-pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
 pre > code.sourceCode > span:empty { height: 1.2em; }
 .sourceCode { overflow: visible; }
 code.sourceCode > span { color: inherit; text-decoration: inherit; }
@@ -32,7 +33,7 @@ div.sourceCode { overflow: auto; }
 }
 @media print {
 pre > code.sourceCode { white-space: pre-wrap; }
-pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
 }
 pre.numberSource code
   { counter-reset: source-line 0; }
@@ -127,7 +128,9 @@ code span.wa { color: #5e5e5e; font-style: italic; } /* Warning */
 <meta property="og:type" content="article"/>
 <meta property="og:description" content="A paper claims the Arctic has entered a new regime, but it smells to much like the &quot;hiatus&quot;."/>
 <meta property="og:url" content="http://eliocamp.github.io/scrapbook/posts/2025-04-01-arctic_regime/"/>
-<meta property="og:image" content="http://eliocamp.github.io/scrapbook/posts/2025-04-01-arctic_regime/img/fig1.jpg"/>
+<meta property="og:image" content="http://eliocamp.github.io/scrapbook/posts/2025-04-01-arctic_regime/arctic_regime_files/figure-html5/arctic-sep-1.png"/>
+<meta property="og:image:width" content="1248"/>
+<meta property="og:image:height" content="768"/>
 <meta property="og:locale" content="en_US"/>
 <meta property="og:site_name" content="The Scrapbook"/>
 
@@ -136,7 +139,9 @@ code span.wa { color: #5e5e5e; font-style: italic; } /* Warning */
 <meta property="twitter:title" content="The Scrapbook: The Arctic might not be in a new regime"/>
 <meta property="twitter:description" content="A paper claims the Arctic has entered a new regime, but it smells to much like the &quot;hiatus&quot;."/>
 <meta property="twitter:url" content="http://eliocamp.github.io/scrapbook/posts/2025-04-01-arctic_regime/"/>
-<meta property="twitter:image" content="http://eliocamp.github.io/scrapbook/posts/2025-04-01-arctic_regime/img/fig1.jpg"/>
+<meta property="twitter:image" content="http://eliocamp.github.io/scrapbook/posts/2025-04-01-arctic_regime/arctic_regime_files/figure-html5/arctic-sep-1.png"/>
+<meta property="twitter:image:width" content="1248"/>
+<meta property="twitter:image:height" content="768"/>
 <meta property="twitter:creator" content="@d_olivaw"/>
 
 <!--  https://scholar.google.com/intl/en/scholar/inclusion.html#indexing -->
@@ -158,7 +163,7 @@ code span.wa { color: #5e5e5e; font-style: italic; } /* Warning */
 <!--/radix_placeholder_rmarkdown_metadata-->
   
   <script type="text/json" id="radix-resource-manifest">
-  {"type":"character","attributes":{},"value":["arctic_regime_files/anchor-4.2.2/anchor.min.js","arctic_regime_files/bowser-1.9.3/bowser.min.js","arctic_regime_files/distill-2.2.21/template.v2.js","arctic_regime_files/figure-html5/anomalies-periods-1.png","arctic_regime_files/figure-html5/arctic-sep-1.png","arctic_regime_files/figure-html5/area-sep-fit-1.png","arctic_regime_files/figure-html5/climatologies-1.png","arctic_regime_files/figure-html5/extent-daily-1.png","arctic_regime_files/figure-html5/extent-monthly-1.png","arctic_regime_files/figure-html5/ice-melt-60-1.png","arctic_regime_files/figure-html5/piomas-1.png","arctic_regime_files/figure-html5/sim--1.png","arctic_regime_files/figure-html5/sim-area-1.png","arctic_regime_files/figure-html5/sim-complex-1.png","arctic_regime_files/figure-html5/sim-fit-1.png","arctic_regime_files/figure-html5/temp-ice-regression-1.png","arctic_regime_files/figure-html5/temperature-1.png","arctic_regime_files/figure-html5/unnamed-chunk-16-1.png","arctic_regime_files/header-attrs-2.28/header-attrs.js","arctic_regime_files/jquery-3.6.0/jquery-3.6.0.js","arctic_regime_files/jquery-3.6.0/jquery-3.6.0.min.js","arctic_regime_files/jquery-3.6.0/jquery-3.6.0.min.map","arctic_regime_files/popper-2.6.0/popper.min.js","arctic_regime_files/tippy-6.2.7/tippy-bundle.umd.min.js","arctic_regime_files/tippy-6.2.7/tippy-light-border.css","arctic_regime_files/tippy-6.2.7/tippy.css","arctic_regime_files/tippy-6.2.7/tippy.umd.min.js","arctic_regime_files/webcomponents-2.0.0/webcomponents.js","bibliography.bib","img/fig1.jpg","img/S1.jpg"]}
+  {"type":"character","attributes":{},"value":["arctic_regime_files/anchor-4.2.2/anchor.min.js","arctic_regime_files/bowser-1.9.3/bowser.min.js","arctic_regime_files/distill-2.2.21/template.v2.js","arctic_regime_files/figure-html5/anomalies-periods-1.png","arctic_regime_files/figure-html5/arctic-sep-1.png","arctic_regime_files/figure-html5/area-sep-fit-1.png","arctic_regime_files/figure-html5/climatologies-1.png","arctic_regime_files/figure-html5/extent-daily-1.png","arctic_regime_files/figure-html5/extent-monthly-1.png","arctic_regime_files/figure-html5/ice-melt-60-1.png","arctic_regime_files/figure-html5/piomas-1.png","arctic_regime_files/figure-html5/sim--1.png","arctic_regime_files/figure-html5/sim-area-1.png","arctic_regime_files/figure-html5/sim-complex-1.png","arctic_regime_files/figure-html5/sim-fit-1.png","arctic_regime_files/figure-html5/temp-ice-regression-1.png","arctic_regime_files/figure-html5/temperature-1.png","arctic_regime_files/figure-html5/unnamed-chunk-16-1.png","arctic_regime_files/header-attrs-2.28/header-attrs.js","arctic_regime_files/header-attrs-2.31/header-attrs.js","arctic_regime_files/jquery-3.6.0/jquery-3.6.0.js","arctic_regime_files/jquery-3.6.0/jquery-3.6.0.min.js","arctic_regime_files/jquery-3.6.0/jquery-3.6.0.min.map","arctic_regime_files/popper-2.6.0/popper.min.js","arctic_regime_files/tippy-6.2.7/tippy-bundle.umd.min.js","arctic_regime_files/tippy-6.2.7/tippy-light-border.css","arctic_regime_files/tippy-6.2.7/tippy.css","arctic_regime_files/tippy-6.2.7/tippy.umd.min.js","arctic_regime_files/webcomponents-2.0.0/webcomponents.js","bibliography.bib","img/fig1.jpg","img/S1.jpg"]}
   </script>
   <!--radix_placeholder_navigation_in_header-->
 <meta name="distill:offset" content="../.."/>
@@ -505,8 +510,8 @@ d-title {
 </style>
 
 <script src="../../site_libs/jquery-3.6.0/jquery-3.6.0.min.js"></script>
-<link href="../../site_libs/font-awesome-6.4.2/css/all.min.css" rel="stylesheet"/>
-<link href="../../site_libs/font-awesome-6.4.2/css/v4-shims.min.css" rel="stylesheet"/>
+<link href="../../site_libs/font-awesome-6.5.2/css/all.min.css" rel="stylesheet"/>
+<link href="../../site_libs/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet"/>
 <script src="../../site_libs/headroom-0.9.4/headroom.min.js"></script>
 <script src="../../site_libs/autocomplete-0.37.1/autocomplete.min.js"></script>
 <script src="../../site_libs/fuse-6.4.1/fuse.min.js"></script>
@@ -2460,7 +2465,7 @@ d-appendix d-footnote-list a.footnote-backlink {
   color: var(--hover-color, white);
 }</style>
 <!--/radix_placeholder_distill-->
-  <script src="../../site_libs/header-attrs-2.28/header-attrs.js"></script>
+  <script src="../../site_libs/header-attrs-2.31/header-attrs.js"></script>
   <script src="../../site_libs/jquery-3.6.0/jquery-3.6.0.min.js"></script>
   <script src="../../site_libs/popper-2.6.0/popper.min.js"></script>
   <link href="../../site_libs/tippy-6.2.7/tippy.css" rel="stylesheet" />
@@ -2540,7 +2545,7 @@ It argues that Arctic sea ice has entered a “new regime” around 2007, going 
 
 <div class="layout-chunk" data-layout="l-body">
 <div class="figure" style="text-align: center"><span style="display:block;" id="fig:fig1"></span>
-<img src="img/fig1.jpg" alt="(ref:fig1-alt)" width="1064" class=external />
+<img src="img/fig1.jpg" alt="(ref:fig1-alt)" class=external />
 <p class="caption">
 Figure 1: Figure 1 from <span class="citation" data-cites="stern2025">Stern (<a href="#ref-stern2025" role="doc-biblioref">2025</a>)</span>. “(a) September Arctic sea-ice extent (<span class="math inline">\(10^6 km^2\)</span>) from the NSIDC Sea Ice Index. The linear least-squares fit is shown in red with slope <span class="math inline">\(−0.78 × 106 km^2\)</span> per decade. (b) The same data as in panel (a). The vertical dotted line between 2006 and 2007 marks the regime shift or breakpoint.
 </p>
@@ -2568,13 +2573,13 @@ Figure 2: September Arctic sea ice extent with a linear discontinuous fit with b
 Is the difference statistically significant?
 Kind of.</p>
 <div class="layout-chunk" data-layout="l-body">
-<pre><code>                         Estimate  Std. Error    t value   Pr(&gt;|t|)
-(Intercept)          24.357466601 39.55785694  0.6157428 0.54138692
-year                 -0.009787556  0.01962676 -0.4986844 0.62060359
-before_2007TRUE      92.465235297 44.38901811  2.0830656 0.04337086
-year:before_2007TRUE -0.045473519  0.02207630 -2.0598347 0.04564675</code></pre>
+<pre><code>                        Estimate  Std. Error    t value   Pr(&gt;|t|)
+(Intercept)          25.03721772 39.57442682  0.6326615 0.53038427
+year                 -0.01012532  0.01963498 -0.5156776 0.60878364
+before_2007TRUE      91.78548418 44.40761166  2.0668863 0.04494514
+year:before_2007TRUE -0.04513576  0.02208554 -2.0436789 0.04729034</code></pre>
 </div>
-<p>The fitting a model with varying slope and intercept for each period shows that the difference in the slope between periods is about -0.05 million squared meters per year, with a p-value of 0.046 which is not hugely significant.</p>
+<p>The fitting a model with varying slope and intercept for each period shows that the difference in the slope between periods is about -0.05 million squared meters per year, with a p-value of 0.047 which is not hugely significant.</p>
 <p>So it seems that at face value the evidence for a change in “regime” based on the slope is not extremely strong.</p>
 <p>If we look at all the data the picture grows even more complex.
 Figure <a href="#fig:extent-monthly">3</a> shows monthly extent anomalies computed using the whole period climatology (this will be important).</p>
@@ -2595,10 +2600,10 @@ Statistical significance is a bit trickier to gauge here because monthly values 
 The linear fit of the yearly mean extent with varying slope and intercept before and after 2006 shows that the change in slope is pretty much not statistically significant.</p>
 <div class="layout-chunk" data-layout="l-body">
 <pre><code>                        Estimate  Std. Error   t value    Pr(&gt;|t|)
-(Intercept)          57.71415781 20.38652721  2.830995 0.007029513
-year                 -0.02339880  0.01011484 -2.313314 0.025553565
-before_2007TRUE      37.84963776 22.63858772  1.671908 0.101805048
-year:before_2007TRUE -0.01863607  0.01125737 -1.655456 0.105113541</code></pre>
+(Intercept)          58.62064467 20.36994596  2.877801 0.006212776
+year                 -0.02384927  0.01010661 -2.359769 0.022895423
+before_2007TRUE      36.94315090 22.62017476  1.633195 0.109730196
+year:before_2007TRUE -0.01818560  0.01124821 -1.616755 0.113245009</code></pre>
 </div>
 <p>So the evidence for this “regime shift” is looking even weaker.</p>
 <p>Sea ice extent is a “2D” measure that doesn’t take into account the thickness.
@@ -2752,7 +2757,7 @@ It’s not a fundamentally different state, just the expected curve of sea ice d
 
 </div>
 <p>What does seem to require explanation is the fact that the rate of sea ice extent is slowing down far from zero.
-The yearly mean logistic model predicts a right asymptote of about 10.3640052 million squared kilometres.
+The yearly mean logistic model predicts a right asymptote of about 10.4 million squared kilometres.
 There is still much ice to be melted away, so why are we slowing down?</p>
 <p>One (admittedly hand-wavy) explanation is that our simple model is just too simple and that other processes act to stabilise sea ice far from zero.
 For example, the model doesn’t account for ice thickness and age.

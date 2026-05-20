@@ -105,45 +105,12 @@ ERAtemp <- function() {
 ```{r}
 CDR <- function() {
   file <- here::here("_data/arctic_regime/cdr_full_arctic.nc")
-  dir.create(dirname(file), showWarnings = FALSE, recursive = TRUE)
-  years <- 1981:2024
+  years <- c(1981, 2024)
   
-  if (file.exists(file)) {
-    return(file)
-  }
+  icecdr::cdr_arctic_monthly(years, file = basename(file), 
+                             dir = dirname(file)) |> 
+    icecdr::cdr_fix()
   
-  urls <- paste0(
-    "https://polarwatch.noaa.gov/erddap/griddap/nsidcG02202v4nh1day.nc?cdr_seaice_conc[(",
-    years,
-    "-01-01T00:00:00Z):1:(",
-    years,
-    "-12-31T00:00:00Z)][(4843738.00):1:(-4858168.92)][(-3850000.0):1:(3750000.0)]"
-  )
-  
-  files <- replicate(length(urls), tempfile())
-  res <- curl::multi_download(urls, files, resume = TRUE)
-  
-  grid <- cdo_griddes(files[1]) |>
-    cdo_execute()
-  grid[4] <-  "gridtype  = projection"
-  grid_file <- tempfile()
-  
-  grid <- c(grid,
-            c("grid_mapping = crs", 
-              "grid_mapping_name = polar_stereographic", 
-              "proj_params = \"+proj=stere +lat_0=90 +lat_ts=70 +lon_0=-45 +k=1 +x_0=0 +y_0=0 +a=6378273 +b=6356889.449 +units=m +no_defs\"")
-  )
-  
-  writeLines(grid, grid_file)
-  
-  
-  files |>
-    rcdo::cdo_mergetime() |>
-    rcdo::cdo_chname("cdr_seaice_conc", "aice") |>
-    rcdo::cdo_setgrid(grid_file) |> 
-    rcdo::cdo_execute(output = file, options = c("-L", "-O"))
-  
-  remove(files)
   return(file)
 }
 ```
@@ -165,17 +132,14 @@ They are particularly relevant in comparison with what is happening in the Antar
 So I wanted to look a bit more into it.
 
 ```{r}
-arctic_d <- "https://noaadata.apps.nsidc.org/NOAA/G02135/north/daily/data/N_seaice_extent_daily_v3.0.csv" |> 
-  fread() |> 
-  _[-1, ] |> 
-  _[, time := lubridate::make_datetime(as.numeric(Year), 
-                                       as.numeric(Month),
-                                       as.numeric(Day))] |> 
-  _[, .(time, aice = as.numeric(Extent))] |> 
-  _[aice < 0, aice := NA] |> 
-  _[year(time) < 2025]
 
-arctic <- arctic_d[, .(aice = mean(aice)), by = .(time = lubridate::floor_date(time, unit = "month"))]
+arctic_d <- icecdr::sea_ice_index("north", "daily", dir = here::here("_data/arctic_regime/")) |> 
+  fread() |> 
+  _[year(time) < 2025] |> 
+  _[, .(time, aice = extent/1e12)]
+
+arctic <- arctic_d |> 
+  _[, .(aice = mean(aice)), by = .(time = lubridate::floor_date(time, unit = "month"))] 
 ```
 
 So, let's start by reproducing the plot.
@@ -228,7 +192,7 @@ Figure \@ref(fig:extent-monthly) shows monthly extent anomalies computed using t
 ```{r extent-monthly}
 arctic |> 
   copy() |> 
-  _[, aice := aice - mean(aice), by = .(month(time))] |> 
+  _[, aice := aice - mean(aice, na.rm = TRUE), by = .(month(time))] |> 
   ggplot(aes(time, aice)) +
   geom_line() +
   geom_smooth(method = "lm", aes(group = year(time) <= 2006)) +
@@ -247,7 +211,7 @@ The linear fit of the yearly mean extent with varying slope and intercept before
 ```{r}
 breakpoint <- arctic |> 
   copy() |> 
-  _[, .(aice = mean(aice)), by = .(year(time))] |> 
+  _[, .(aice = mean(aice, na.rm = TRUE)), by = .(year(time))] |> 
   _[, before_2007 := year <= 2006] |>
   lm(aice ~ year*before_2007, data = _)
 
@@ -342,7 +306,7 @@ arctic_d |>
                                                                 year(time) >= 2014, "Late",
                                                                 default = NA))] |> 
   na.omit() |> 
-  _[, aice := aice - mean(aice), by = period] |> 
+  _[, aice := aice - mean(aice), by = period] |>
   ggplot(aes(as.Date(time), aice)) + 
   geom_line(aes(color = period)) +
   scale_y_continuous("Sea ice extent (anomaly from the annual mean)") +
@@ -379,7 +343,7 @@ But it will melt a proportion of what ice is there (that's the first condition o
 t2m <- ERAtemp() |> 
   cdo_zonmean() |> 
   cdo_execute(options = "-f nc") |> 
-  ReadNetCDF(c(t2m = "var167"))
+  ReadNetCDF(c(t2m = "2t"))
 ```
 
 ```{r}
@@ -510,7 +474,7 @@ It also fits the data very well, as can be seen in Figure \@ref(fig:area-sep-fit
 ```{r area-sep-fit}
 arctic |> 
   copy() |> 
-  _[, .(aice = mean(aice)), by = .(year(time))] |> 
+  _[, .(aice = mean(aice, na.rm = TRUE)), by = .(year(time))] |> 
   _[, fit := predict(nls(aice ~ glf(year, t0, left, right, rate), 
                          start = list(t0 = median(year), left = max(aice),  right = min(aice), rate = -0.2)))] |> 
   ggplot(aes(year, aice)) +
@@ -527,7 +491,7 @@ The authors fit a special case of the generalised logistic function called [Gomp
 rmses <- arctic |> 
   copy() |> 
   _[month(time) == 9] |> 
-  _[, .(aice = mean(aice)), by = .(year(time))] |> 
+  _[, .(aice = mean(aice, na.rm = TRUE)), by = .(year(time))] |> 
   _[, fit := predict(nls(aice ~ glf(year, t0, left, right, rate), 
                          start = list(t0 = median(year), left = max(aice),  right = min(aice), rate = -0.2)))] |> 
   _[, period := year < 2006] |> 
@@ -546,13 +510,13 @@ It's not a fundamentally different state, just the expected curve of sea ice dec
 ```{r}
 model <- arctic |> 
   copy() |> 
-  _[, .(aice = mean(aice)), by = .(year(time))] |> 
+  _[, .(aice = mean(aice, na.rm = TRUE)), by = .(year(time))] |> 
   _[, nls(aice ~ glf(year, t0, left, right, rate), 
           start = list(t0 = median(year), left = max(aice),  right = min(aice), rate = -0.2))]
 ```
 
 What does seem to require explanation is the fact that the rate of sea ice extent is slowing down far from zero.
-The yearly mean logistic model predicts a right asymptote of about `r predict(model, newdata = data.frame(year = 10000))` million squared kilometres.
+The yearly mean logistic model predicts a right asymptote of about `r round(predict(model, newdata = data.frame(year = 10000)), digits = 1)` million squared kilometres.
 There is still much ice to be melted away, so why are we slowing down?
 
 One (admittedly hand-wavy) explanation is that our simple model is just too simple and that other processes act to stabilise sea ice far from zero.
@@ -597,14 +561,20 @@ t2m |>
 temp_models <- rbind(
   t2m |> 
     # _[lat %in% c(65, 70, 75, 80, 85, 90)] |>
+    _[lat > 62] |> 
     _[, .(t2m = mean(t2m)), by = .(year(time), lat)] |>
     _[, year := year - min(year)] |> 
-    _[lat > 60, .(model = list(nls(t2m ~ glf(year, t0, left, right, rate),  control = nls.control(maxiter = 100),
-                                   start = list(t0 = median(year), left = min(t2m), right = max(t2m), rate = -0.2)))), by = lat],
+    _[, .(model = list(nls(t2m ~ glf(year, t0, left, right, rate),  
+                                   control = nls.control(maxiter = 100),
+                                   start = list(t0 = median(year), 
+                                                left = min(t2m), 
+                                                right = max(t2m), 
+                                                rate = -0.2)))), 
+      by = lat],
   t2m |> 
     _[, .(t2m = mean(t2m)), by = .(year(time), lat)] |>
     _[, year := year - min(year)] |> 
-    _[lat <= 60, .(model = list(lm(t2m ~ year))), by = lat] 
+    _[lat <= 62, .(model = list(lm(t2m ~ year))), by = lat] 
 )
 
 temp_realistic <- function(which_lat) {
@@ -631,7 +601,7 @@ The result is that, sea ice decline slows down and remains relatively stable wel
 ```{r sim-complex}
 sim_area <- sim_realistic |> 
   # _[lat %between% c(-80, -60), aice := 0] |> 
-  _[, .(aice = weighted.mean(aice, cos(lat*pi/180))), by = .(time)]
+  _[, .(aice = weighted.mean(aice, cos(lat*pi/180), na.rm = TRUE)), by = .(time)]
 
 sim_area |> copy() |> 
   ggplot(aes(time, aice)) +
@@ -648,10 +618,10 @@ Some evidence for this hypothesis is that even a simple linear regression model 
 
 ```{r include=FALSE}
 arctic_zonmean <- CDR() |> 
-  cdo_remapbil(ERAtemp()) |> 
-  cdo_sellonlatbox(0, 360, 55, 90) |> 
-  cdo_zonmean() |> 
-  cdo_setday(1) |> 
+  cdo_remapbil(ERAtemp()) |>
+  cdo_sellonlatbox(0, 360, 55, 90) |>
+  cdo_zonmean() |>
+  cdo_setday(1) |>
   cdo_execute()
 ```
 
@@ -662,7 +632,8 @@ t2m_zonmean <- t2m |>
   _[, .(t2m = mean(t2m)), by = .(year(time), lat)]
 
 arctic_zonmean |> 
-  ReadNetCDF("aice") |> 
+  ReadNetCDF("aice") |>
+  _[lat < 90] |> 
   _[month(time) == 9] |>
   # _[, .(aice = mean(aice)), by = .(lat, year(time))] |>
   _[, year := year(time)] |>
@@ -670,7 +641,6 @@ arctic_zonmean |>
   _[t2m[, .(t2m = mean(t2m)), by = .(lat, year(time))], on = c("lat", "year")] |> 
   na.omit() |>
   _[, aice_pred := predict(lm(aice ~t2m)), by = lat] |> 
-  _[] |> 
   _[, .(lat, year, observed = aice, predicted = aice_pred)] |> 
   melt(id.vars = c("lat", "year")) |> 
   _[, .(value = weighted.mean(value, cos(lat*pi/180))), by = .(variable, year)] |> 
